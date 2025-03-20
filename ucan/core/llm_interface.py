@@ -3,29 +3,33 @@ Interfaces para comunicação com Large Language Models (LLMs).
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Dict, Optional
 
 import requests
 from requests.exceptions import RequestException, Timeout
 
-from ucan.config.constants import DEFAULT_API_TIMEOUT, MAX_TOKENS
 from ucan.config.settings import settings
 
 
 class LLMInterface(ABC):
     """Interface base para todos os LLMs."""
 
-    def __init__(self, model_name: str, api_key: Optional[str] = None) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Inicializa a interface do LLM.
 
         Args:
-            model_name: Nome do modelo a ser utilizado
-            api_key: Chave de API (opcional, pode ser carregada das configurações)
+            config: Configuração do provedor (opcional, carregada das configurações)
         """
-        self.model_name = model_name
-        self.api_key = api_key
-        self.timeout = DEFAULT_API_TIMEOUT
+        if config is None:
+            config = settings.get_provider_config()
+
+        self.provider = config.get("provider", "")
+        self.model_name = config.get("model", "")
+        self.api_key = config.get("api_key", "")
+        self.timeout = config.get("timeout", 30)
+        self.temperature = config.get("temperature", 0.7)
+        self.max_tokens = config.get("max_tokens", 1000)
 
     async def initialize(self) -> None:
         """Inicializa a interface do LLM."""
@@ -33,14 +37,14 @@ class LLMInterface(ABC):
 
     @abstractmethod
     async def generate_response(
-        self, content: str, max_tokens: int = MAX_TOKENS
+        self, content: str, max_tokens: Optional[int] = None
     ) -> str:
         """
         Gera uma resposta para uma mensagem.
 
         Args:
             content: Conteúdo da mensagem
-            max_tokens: Número máximo de tokens na resposta
+            max_tokens: Número máximo de tokens na resposta (opcional)
 
         Returns:
             Resposta gerada pelo modelo
@@ -61,28 +65,25 @@ class LLMInterface(ABC):
 class OpenAIInterface(LLMInterface):
     """Interface para comunicação com a API da OpenAI."""
 
-    def __init__(
-        self, model_name: str = "gpt-3.5-turbo", api_key: Optional[str] = None
-    ) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Inicializa a interface da OpenAI.
 
         Args:
-            model_name: Nome do modelo a ser utilizado
-            api_key: Chave de API da OpenAI
+            config: Configuração do provedor (opcional)
         """
-        super().__init__(model_name, api_key or settings.OPENAI_API_KEY)
+        super().__init__(config)
         self.api_url = "https://api.openai.com/v1/chat/completions"
 
     async def generate_response(
-        self, content: str, max_tokens: int = MAX_TOKENS
+        self, content: str, max_tokens: Optional[int] = None
     ) -> str:
         """
         Gera uma resposta usando a API da OpenAI.
 
         Args:
             content: Conteúdo da mensagem
-            max_tokens: Número máximo de tokens na resposta
+            max_tokens: Número máximo de tokens na resposta (opcional)
 
         Returns:
             Resposta gerada pelo modelo
@@ -102,7 +103,8 @@ class OpenAIInterface(LLMInterface):
             data = {
                 "model": self.model_name,
                 "messages": [{"role": "user", "content": content}],
-                "max_tokens": max_tokens,
+                "max_tokens": max_tokens or self.max_tokens,
+                "temperature": self.temperature,
             }
 
             response = requests.post(
@@ -125,29 +127,24 @@ class OpenAIInterface(LLMInterface):
             raise Exception(f"Erro ao gerar resposta: {str(e)}")
 
     def validate_api_key(self) -> bool:
-        """
-        Valida a chave de API da OpenAI.
+        """Valida a chave de API e o modelo configurado.
 
         Returns:
-            True se a chave é válida
+            bool: True se a chave de API e o modelo são válidos, False caso contrário.
         """
-        if not self.api_key:
+        if not self.api_key or not self.model_name:
             return False
-
         try:
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
             }
-
             response = requests.get(
                 "https://api.openai.com/v1/models",
                 headers=headers,
                 timeout=self.timeout,
             )
-
             return response.status_code == 200
-
         except Exception:
             return False
 
@@ -155,28 +152,25 @@ class OpenAIInterface(LLMInterface):
 class AnthropicInterface(LLMInterface):
     """Interface para comunicação com a API da Anthropic."""
 
-    def __init__(
-        self, model_name: str = "claude-3-sonnet", api_key: Optional[str] = None
-    ) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Inicializa a interface da Anthropic.
 
         Args:
-            model_name: Nome do modelo a ser utilizado
-            api_key: Chave de API da Anthropic
+            config: Configuração do provedor (opcional)
         """
-        super().__init__(model_name, api_key or settings.ANTHROPIC_API_KEY)
+        super().__init__(config)
         self.api_url = "https://api.anthropic.com/v1/messages"
 
     async def generate_response(
-        self, content: str, max_tokens: int = MAX_TOKENS
+        self, content: str, max_tokens: Optional[int] = None
     ) -> str:
         """
         Gera uma resposta usando a API da Anthropic.
 
         Args:
             content: Conteúdo da mensagem
-            max_tokens: Número máximo de tokens na resposta
+            max_tokens: Número máximo de tokens na resposta (opcional)
 
         Returns:
             Resposta gerada pelo modelo
@@ -197,7 +191,8 @@ class AnthropicInterface(LLMInterface):
             data = {
                 "model": self.model_name,
                 "messages": [{"role": "user", "content": content}],
-                "max_tokens": max_tokens,
+                "max_tokens": max_tokens or self.max_tokens,
+                "temperature": self.temperature,
             }
 
             response = requests.post(
@@ -220,30 +215,193 @@ class AnthropicInterface(LLMInterface):
             raise Exception(f"Erro ao gerar resposta: {str(e)}")
 
     def validate_api_key(self) -> bool:
-        """
-        Valida a chave de API da Anthropic.
+        """Valida a chave de API e o modelo configurado.
 
         Returns:
-            True se a chave é válida
+            bool: True se a chave de API e o modelo são válidos, False caso contrário.
         """
-        if not self.api_key:
+        if not self.api_key or not self.model_name:
             return False
-
         try:
             headers = {
                 "x-api-key": self.api_key,
                 "anthropic-version": "2023-06-01",
                 "Content-Type": "application/json",
             }
-
             response = requests.get(
                 "https://api.anthropic.com/v1/models",
                 headers=headers,
                 timeout=self.timeout,
             )
-
             return response.status_code == 200
+        except Exception:
+            return False
 
+
+class OpenRouterInterface(LLMInterface):
+    """Interface para comunicação com a API do OpenRouter."""
+
+    def __init__(self, config: Optional[Dict] = None) -> None:
+        """
+        Inicializa a interface do OpenRouter.
+
+        Args:
+            config: Configuração do provedor (opcional)
+        """
+        super().__init__(config)
+        self.api_url = "https://openrouter.ai/api/v1/chat/completions"
+
+    async def generate_response(
+        self, content: str, max_tokens: Optional[int] = None
+    ) -> str:
+        """
+        Gera uma resposta usando a API do OpenRouter.
+
+        Args:
+            content: Conteúdo da mensagem
+            max_tokens: Número máximo de tokens na resposta (opcional)
+
+        Returns:
+            Resposta gerada pelo modelo
+
+        Raises:
+            Exception: Se houver erro na comunicação com a API
+        """
+        if not self.api_key:
+            raise Exception("Chave de API do OpenRouter não configurada")
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://ucan.ai",  # URL do projeto
+                "X-Title": "UCAN",  # Nome do projeto
+            }
+
+            data = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": content}],
+                "max_tokens": max_tokens or self.max_tokens,
+                "temperature": self.temperature,
+            }
+
+            response = requests.post(
+                self.api_url,
+                headers=headers,
+                json=data,
+                timeout=self.timeout,
+            )
+
+            if response.status_code == 200:
+                return response.json()["choices"][0]["message"]["content"]
+            else:
+                raise Exception(f"Erro na API do OpenRouter: {response.text}")
+
+        except Timeout:
+            raise Exception("Timeout na comunicação com a API do OpenRouter")
+        except RequestException as e:
+            raise Exception(f"Erro na comunicação com a API do OpenRouter: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Erro ao gerar resposta: {str(e)}")
+
+    def validate_api_key(self) -> bool:
+        """Valida a chave de API e o modelo configurado.
+
+        Returns:
+            bool: True se a chave de API e o modelo são válidos, False caso contrário.
+        """
+        if not self.api_key or not self.model_name:
+            return False
+        try:
+            response = requests.get(
+                "https://openrouter.ai/api/v1/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=self.timeout,
+            )
+            return response.status_code == 200
+        except Exception:
+            return False
+
+
+class StackSpotAIInterface(LLMInterface):
+    """Interface para comunicação com a API do StackSpot AI."""
+
+    def __init__(self, config: Optional[Dict] = None) -> None:
+        """
+        Inicializa a interface do StackSpot AI.
+
+        Args:
+            config: Configuração do provedor (opcional)
+        """
+        super().__init__(config)
+        self.api_url = "https://api.stackspot.com/v1/chat/completions"
+
+    async def generate_response(
+        self, content: str, max_tokens: Optional[int] = None
+    ) -> str:
+        """
+        Gera uma resposta usando a API do StackSpot AI.
+
+        Args:
+            content: Conteúdo da mensagem
+            max_tokens: Número máximo de tokens na resposta (opcional)
+
+        Returns:
+            Resposta gerada pelo modelo
+
+        Raises:
+            Exception: Se houver erro na comunicação com a API
+        """
+        if not self.api_key:
+            raise Exception("Chave de API do StackSpot AI não configurada")
+
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            }
+
+            data = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": content}],
+                "max_tokens": max_tokens or self.max_tokens,
+                "temperature": self.temperature,
+            }
+
+            response = requests.post(
+                self.api_url,
+                headers=headers,
+                json=data,
+                timeout=self.timeout,
+            )
+
+            if response.status_code == 200:
+                return response.json()["choices"][0]["message"]["content"]
+            else:
+                raise Exception(f"Erro na API do StackSpot AI: {response.text}")
+
+        except Timeout:
+            raise Exception("Timeout na comunicação com a API do StackSpot AI")
+        except RequestException as e:
+            raise Exception(f"Erro na comunicação com a API do StackSpot AI: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Erro ao gerar resposta: {str(e)}")
+
+    def validate_api_key(self) -> bool:
+        """Valida a chave de API e o modelo configurado.
+
+        Returns:
+            bool: True se a chave de API e o modelo são válidos, False caso contrário.
+        """
+        if not self.api_key or not self.model_name:
+            return False
+        try:
+            response = requests.get(
+                "https://api.stackspot.com/v1/models",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                timeout=self.timeout,
+            )
+            return response.status_code == 200
         except Exception:
             return False
 
@@ -251,28 +409,25 @@ class AnthropicInterface(LLMInterface):
 class LocalLLMInterface(LLMInterface):
     """Interface para comunicação com um LLM local."""
 
-    def __init__(
-        self, model_name: str = "llama2", api_url: Optional[str] = None
-    ) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         """
         Inicializa a interface do LLM local.
 
         Args:
-            model_name: Nome do modelo a ser utilizado
-            api_url: URL da API local
+            config: Configuração do provedor (opcional)
         """
-        super().__init__(model_name)
-        self.api_url = api_url or settings.LOCAL_LLM_URL
+        super().__init__(config)
+        self.api_url = "http://localhost:11434"
 
     async def generate_response(
-        self, content: str, max_tokens: int = MAX_TOKENS
+        self, content: str, max_tokens: Optional[int] = None
     ) -> str:
         """
         Gera uma resposta usando o LLM local.
 
         Args:
             content: Conteúdo da mensagem
-            max_tokens: Número máximo de tokens na resposta
+            max_tokens: Número máximo de tokens na resposta (opcional)
 
         Returns:
             Resposta gerada pelo modelo
@@ -284,7 +439,8 @@ class LocalLLMInterface(LLMInterface):
             data = {
                 "model": self.model_name,
                 "prompt": content,
-                "max_tokens": max_tokens,
+                "max_tokens": max_tokens or self.max_tokens,
+                "temperature": self.temperature,
             }
 
             response = requests.post(
@@ -306,23 +462,19 @@ class LocalLLMInterface(LLMInterface):
             raise Exception(f"Erro ao gerar resposta: {str(e)}")
 
     def validate_api_key(self) -> bool:
-        """
-        Valida a conexão com o LLM local.
+        """Valida a URL e o modelo configurado.
 
         Returns:
-            True se a conexão é válida
+            bool: True se a URL e o modelo são válidos, False caso contrário.
         """
-        if not self.api_url:
+        if not self.model_name:
             return False
-
         try:
             response = requests.get(
-                f"{self.api_url}/health",
+                f"{self.api_url}/api/models",
                 timeout=self.timeout,
             )
-
             return response.status_code == 200
-
         except Exception:
             return False
 
@@ -332,21 +484,21 @@ class MockLLMInterface(LLMInterface):
 
     def __init__(self) -> None:
         """Inicializa a interface simulada."""
-        super().__init__("mock")
+        super().__init__({"provider": "mock", "model": "mock"})
 
     async def initialize(self) -> None:
         """Inicializa a interface simulada."""
         pass
 
     async def generate_response(
-        self, content: str, max_tokens: int = MAX_TOKENS
+        self, content: str, max_tokens: Optional[int] = None
     ) -> str:
         """
         Gera uma resposta simulada.
 
         Args:
             content: Conteúdo da mensagem
-            max_tokens: Número máximo de tokens na resposta
+            max_tokens: Número máximo de tokens na resposta (opcional)
 
         Returns:
             Resposta simulada
@@ -364,27 +516,26 @@ class MockLLMInterface(LLMInterface):
 
 
 def get_llm_interface() -> LLMInterface:
-    """
-    Retorna uma interface LLM apropriada com base nas configurações.
+    """Retorna uma interface LLM configurada.
 
     Returns:
-        Interface LLM configurada
+        LLMInterface: Interface LLM configurada.
     """
-    # Se não houver chaves de API configuradas, retorna a interface mock
-    if not settings.get("OPENAI_API_KEY") and not settings.get("ANTHROPIC_API_KEY"):
+    config = settings.get_provider_config()
+    if not config:
         return MockLLMInterface()
 
-    # Tenta criar uma interface OpenAI
-    if settings.get("OPENAI_API_KEY"):
-        interface = OpenAIInterface(api_key=settings.get("OPENAI_API_KEY"))
-        if interface.validate_api_key():
-            return interface
+    provider = config["provider"]
+    interface_map = {
+        "openai": OpenAIInterface,
+        "anthropic": AnthropicInterface,
+        "openrouter": OpenRouterInterface,
+        "stackspot": StackSpotAIInterface,
+        "local": LocalLLMInterface,
+    }
 
-    # Tenta criar uma interface Anthropic
-    if settings.get("ANTHROPIC_API_KEY"):
-        interface = AnthropicInterface(api_key=settings.get("ANTHROPIC_API_KEY"))
-        if interface.validate_api_key():
-            return interface
+    interface_class = interface_map.get(provider)
+    if not interface_class:
+        return MockLLMInterface()
 
-    # Se nenhuma interface válida for encontrada, retorna a interface mock
-    return MockLLMInterface()
+    return interface_class(config)

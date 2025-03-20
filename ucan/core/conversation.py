@@ -1,241 +1,313 @@
 """
-Gerenciador de conversas e histórico de mensagens.
+Módulo de gerenciamento de conversas.
 """
 
 import json
-import os
+import logging
 import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ucan.config.settings import settings
+from ucan.core.database import db
+from ucan.core.knowledge_base import KnowledgeBase
 from ucan.core.models import Message
+
+logger = logging.getLogger(__name__)
 
 
 class Conversation:
-    """Gerencia uma conversa com um LLM, incluindo o histórico de mensagens."""
+    """Representa uma conversa entre o usuário e o assistente."""
 
     def __init__(
         self,
+        title: Optional[str] = None,
         id: Optional[str] = None,
-        title: str = "Nova Conversa",
-        system_prompt: Optional[str] = None,
+        type_id: Optional[str] = None,
+        created_at: Optional[str] = None,
+        updated_at: Optional[str] = None,
+        metadata: Optional[Dict] = None,
     ) -> None:
         """
         Inicializa uma nova conversa.
 
         Args:
-            id: Identificador único da conversa (gera um novo se não fornecido)
             title: Título da conversa
-            system_prompt: Prompt inicial do sistema (opcional)
+            id: ID da conversa (opcional)
+            type_id: ID do tipo da conversa (opcional)
+            created_at: Data de criação (opcional)
+            updated_at: Data de atualização (opcional)
+            metadata: Metadados adicionais (opcional)
         """
         self.id = id or str(uuid.uuid4())
-        self.title = title
-        self.created_at = datetime.now().isoformat()
-        self.updated_at = self.created_at
+        self.title = title or "Nova Conversa"
+        self.type_id = type_id
+        self.created_at = created_at or datetime.utcnow().isoformat()
+        self.updated_at = updated_at or self.created_at
+        self.metadata = metadata or {}
         self.messages: List[Message] = []
 
-        # Adiciona o prompt do sistema se fornecido
-        if system_prompt:
-            self.add_message("system", system_prompt)
+        # Se um ID foi fornecido, tenta carregar do banco
+        if id:
+            self._load_from_db()
 
-    def add_message(self, role: str, content: str) -> Message:
+    def _load_from_db(self) -> None:
+        """Carrega os dados da conversa do banco de dados."""
+        try:
+            # Carrega dados da conversa
+            conversation_data = db.get_conversation(self.id)
+            if conversation_data:
+                self.title = conversation_data["title"]
+                self.type_id = conversation_data.get("type_id")
+                self.created_at = conversation_data["created_at"].isoformat()
+                self.updated_at = conversation_data["updated_at"].isoformat()
+                self.metadata = conversation_data["metadata"]
+
+                # Carrega mensagens
+                messages_data = db.get_messages(self.id)
+                self.messages = []
+                for msg in messages_data:
+                    self.messages.append(
+                        Message(
+                            id=msg["id"],
+                            role=msg["role"],
+                            content=msg["content"],
+                            created_at=msg["created_at"].isoformat(),
+                            metadata=msg["metadata"],
+                        )
+                    )
+        except Exception as e:
+            logger.error(f"Erro ao carregar conversa do banco: {e}")
+
+    def add_message(
+        self,
+        role: str,
+        content: str,
+        id: Optional[str] = None,
+        created_at: Optional[str] = None,
+        metadata: Optional[Dict] = None,
+    ) -> Message:
         """
-        Adiciona uma nova mensagem à conversa.
+        Adiciona uma mensagem à conversa.
 
         Args:
             role: Papel do remetente (user, assistant, system)
             content: Conteúdo da mensagem
+            id: ID da mensagem (opcional)
+            created_at: Data de criação (opcional)
+            metadata: Metadados adicionais (opcional)
 
         Returns:
-            A mensagem criada
+            Mensagem adicionada
         """
-        message = Message(role=role, content=content)
+        message = Message(
+            id=id or str(uuid.uuid4()),
+            role=role,
+            content=content,
+            created_at=created_at or datetime.utcnow().isoformat(),
+            metadata=metadata or {},
+        )
         self.messages.append(message)
-        self.updated_at = datetime.now().isoformat()
+        self.updated_at = datetime.utcnow().isoformat()
+
+        # Salva a mensagem no banco
+        try:
+            db.save_message(
+                message.id,
+                self.id,
+                message.role,
+                message.content,
+                message.metadata,
+            )
+        except Exception as e:
+            logger.error(f"Erro ao salvar mensagem no banco: {e}")
+
         return message
 
-    def clear_messages(self) -> None:
-        """Remove todas as mensagens, mantendo apenas o prompt do sistema se existir."""
-        system_messages = [m for m in self.messages if m.role == "system"]
-        self.messages = system_messages
+    def save(self) -> bool:
+        """
+        Salva a conversa no banco de dados.
+
+        Returns:
+            True se a operação foi bem sucedida, False caso contrário
+        """
+        try:
+            db.save_conversation(self.id, self.title, self.metadata)
+            return True
+        except Exception as e:
+            logger.error(f"Erro ao salvar conversa no banco: {e}")
+            return False
+
+    def get_knowledge_bases(self) -> List[KnowledgeBase]:
+        """
+        Obtém todas as bases de conhecimento disponíveis para esta conversa.
+
+        Returns:
+            Lista de bases de conhecimento
+        """
+        bases = []
+
+        # Bases globais
+        bases.extend(KnowledgeBase.get_global_bases())
+
+        # Bases do tipo da conversa
+        if self.type_id:
+            bases.extend(KnowledgeBase.get_type_bases(self.type_id))
+
+        # Bases específicas da conversa
+        bases.extend(KnowledgeBase.get_conversation_bases(self.id))
+
+        return bases
+
+    def create_knowledge_base(
+        self, name: str, description: str, metadata: Optional[Dict] = None
+    ) -> KnowledgeBase:
+        """
+        Cria uma nova base de conhecimento para esta conversa.
+
+        Args:
+            name: Nome da base
+            description: Descrição da base
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Base de conhecimento criada
+        """
+        return KnowledgeBase(
+            name=name,
+            description=description,
+            scope="conversation",
+            conversation_id=self.id,
+            metadata=metadata,
+        )
 
     def to_dict(self) -> Dict:
-        """Converte a conversa para um dicionário."""
+        """
+        Converte a conversa para um dicionário.
+
+        Returns:
+            Dicionário com os dados da conversa
+        """
         return {
             "id": self.id,
             "title": self.title,
+            "type_id": self.type_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "metadata": self.metadata,
             "messages": [message.to_dict() for message in self.messages],
         }
 
-    @classmethod
-    def from_dict(cls, data: Dict) -> "Conversation":
-        """Cria uma conversa a partir de um dicionário."""
-        conversation = cls(
-            id=data.get("id"),
-            title=data.get("title", "Conversa Importada"),
-        )
-        conversation.created_at = data.get("created_at", conversation.created_at)
-        conversation.updated_at = data.get("updated_at", conversation.updated_at)
-        conversation.messages = [
-            Message.from_dict(msg) for msg in data.get("messages", [])
-        ]
-        return conversation
-
-    def save(self) -> Path:
+    def export(self, file_path: Path) -> bool:
         """
-        Salva a conversa em um arquivo JSON.
-
-        Returns:
-            Caminho do arquivo salvo
-        """
-        if not settings.SAVE_CHAT_HISTORY:
-            return Path()
-
-        conversations_dir = settings.CONVERSATIONS_DIR
-        conversations_dir.mkdir(parents=True, exist_ok=True)
-
-        # Cria um nome de arquivo seguro baseado no título e data
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_title = "".join(
-            c if c.isalnum() or c in " -_" else "_" for c in self.title
-        )
-        file_name = f"{safe_title}_{timestamp}.json"
-        file_path = conversations_dir / file_name
-
-        # Salva a conversa
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=2)
-
-        return file_path
-
-    def export(self, export_path: Path) -> bool:
-        """
-        Exporta a conversa para um arquivo JSON.
+        Exporta a conversa para um arquivo.
 
         Args:
-            export_path: Caminho para exportar a conversa
+            file_path: Caminho do arquivo
 
         Returns:
             True se a exportação foi bem sucedida, False caso contrário
         """
         try:
-            # Garante que o diretório existe
-            os.makedirs(os.path.dirname(str(export_path)), exist_ok=True)
-
-            # Exporta a conversa
-            with open(export_path, "w", encoding="utf-8") as f:
-                json.dump(self.to_dict(), f, indent=2)
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(self.to_dict(), f, indent=2, ensure_ascii=False)
             return True
-        except Exception:
+        except Exception as e:
+            logger.error(f"Erro ao exportar conversa: {e}")
             return False
 
     @classmethod
-    def import_from_file(cls, import_path: Path) -> Optional["Conversation"]:
+    def import_from_file(cls, file_path: Path) -> Optional["Conversation"]:
         """
-        Importa uma conversa de um arquivo JSON.
+        Importa uma conversa de um arquivo.
 
         Args:
-            import_path: Caminho do arquivo a ser importado
+            file_path: Caminho do arquivo
 
         Returns:
-            A conversa importada ou None se falhou
+            Conversa importada ou None se falhou
         """
         try:
-            with open(import_path, "r", encoding="utf-8") as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            return cls.from_dict(data)
-        except Exception:
+
+            conversation = cls(
+                title=data.get("title"),
+                id=data.get("id"),
+                type_id=data.get("type_id"),
+                created_at=data.get("created_at"),
+                updated_at=data.get("updated_at"),
+                metadata=data.get("metadata", {}),
+            )
+
+            for message_data in data.get("messages", []):
+                conversation.add_message(
+                    role=message_data["role"],
+                    content=message_data["content"],
+                    id=message_data.get("id"),
+                    created_at=message_data.get("created_at"),
+                    metadata=message_data.get("metadata", {}),
+                )
+
+            return conversation
+        except Exception as e:
+            logger.error(f"Erro ao importar conversa: {e}")
             return None
 
     @classmethod
     def load(cls, conversation_id: str) -> Optional["Conversation"]:
         """
-        Carrega uma conversa de um arquivo JSON.
+        Carrega uma conversa do banco de dados.
 
         Args:
-            conversation_id: ID da conversa a ser carregada
+            conversation_id: ID da conversa
 
         Returns:
-            A conversa carregada ou None se não encontrada
+            Conversa carregada ou None se não encontrada
         """
-        if not settings.SAVE_CHAT_HISTORY:
+        try:
+            return cls(id=conversation_id)
+        except Exception as e:
+            logger.error(f"Erro ao carregar conversa: {e}")
             return None
 
-        conversations_dir = settings.CONVERSATIONS_DIR
-        if not conversations_dir.exists():
-            return None
-
-        # Procura por arquivos que contenham o ID no nome
-        for file_path in conversations_dir.glob("*.json"):
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if data.get("id") == conversation_id:
-                        return cls.from_dict(data)
-            except (json.JSONDecodeError, KeyError):
-                continue
-
-        return None
-
     @classmethod
-    def list_all(cls) -> List[Dict]:
+    def get_all(cls) -> List["Conversation"]:
         """
-        Lista todas as conversas salvas.
+        Obtém todas as conversas.
 
         Returns:
-            Lista de dicionários com os metadados das conversas
+            Lista de conversas
         """
-        if not settings.SAVE_CHAT_HISTORY:
+        try:
+            results = db.conn.execute(
+                """
+                SELECT id, title, type_id, created_at, updated_at, metadata
+                FROM conversations
+                ORDER BY updated_at DESC
+                """
+            ).fetchall()
+
+            return [
+                cls(
+                    title=row[1],
+                    id=row[0],
+                    type_id=row[2],
+                    created_at=row[3].isoformat(),
+                    updated_at=row[4].isoformat(),
+                    metadata=json.loads(row[5]),
+                )
+                for row in results
+            ]
+        except Exception as e:
+            logger.error(f"Erro ao obter conversas: {e}")
             return []
 
-        conversations_dir = settings.CONVERSATIONS_DIR
-        if not conversations_dir.exists():
-            return []
-
-        conversations = []
-        for file_path in conversations_dir.glob("*.json"):
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    conversations.append(data)
-            except (json.JSONDecodeError, KeyError):
-                continue
-
-        # Ordena por data de atualização (mais recente primeiro)
-        conversations.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
-        return conversations
-
-    @classmethod
-    def delete(cls, conversation_id: str) -> bool:
+    def get_messages(self) -> List[Message]:
         """
-        Exclui uma conversa.
-
-        Args:
-            conversation_id: ID da conversa a ser excluída
+        Obtém todas as mensagens da conversa.
 
         Returns:
-            True se a conversa foi excluída com sucesso, False caso contrário
+            Lista de mensagens
         """
-        if not settings.SAVE_CHAT_HISTORY:
-            return False
-
-        conversations_dir = settings.CONVERSATIONS_DIR
-        if not conversations_dir.exists():
-            return False
-
-        # Procura por arquivos que contenham o ID no nome
-        for file_path in conversations_dir.glob("*.json"):
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if data.get("id") == conversation_id:
-                        file_path.unlink()
-                        return True
-            except (json.JSONDecodeError, KeyError):
-                continue
-
-        return False
+        return self.messages

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Arquivo principal de entrada para o aplicativo UCAN."""
 
+import asyncio
 import gc
 import logging
 import signal
@@ -21,7 +22,6 @@ from ucan.config.constants import (
 from ucan.config.settings import settings
 from ucan.core.app_controller import AppController
 from ucan.ui.main_window import MainWindow
-from ucan.ui.styles import style_manager
 
 # Configurar atributos Qt antes de criar a aplicação
 QCoreApplication.setAttribute(Qt.AA_ShareOpenGLContexts)
@@ -129,7 +129,28 @@ async def async_init(window) -> None:
         raise
 
 
-def main() -> None:
+def load_styles() -> str:
+    """
+    Carrega os estilos CSS da aplicação.
+
+    Returns:
+        Estilos CSS combinados
+    """
+    styles_dir = Path(__file__).parent / "ui" / "styles"
+    styles = []
+
+    try:
+        for css_file in styles_dir.glob("*.css"):
+            with open(css_file, "r", encoding="utf-8") as f:
+                styles.append(f.read())
+    except Exception as e:
+        logging.error("Erro ao carregar estilos: %s", e)
+        return ""
+
+    return "\n".join(styles)
+
+
+async def main() -> None:
     """Função principal do aplicativo."""
     logger.info(f"Iniciando {APP_NAME} v{APP_VERSION}")
 
@@ -154,7 +175,9 @@ def main() -> None:
         app.setWindowIcon(app_icon)
 
         # Configurar estilo
-        app.setStyleSheet(style_manager.get_theme_stylesheet())
+        styles = load_styles()
+        if styles:
+            app.setStyleSheet(styles)
         logger.debug("Aplicação Qt configurada")
 
         # Configurar loop de eventos assíncrono
@@ -191,7 +214,7 @@ if __name__ == "__main__":
 
     # Executar aplicação
     try:
-        main()
+        asyncio.run(main())
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.error(f"Erro ao iniciar aplicação: {e}", exc_info=True)

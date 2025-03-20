@@ -85,46 +85,81 @@ class SettingsDialog(QDialog):
         """
         layout = QVBoxLayout(tab)
 
-        # Configurações da OpenAI
-        openai_group = QGroupBox("OpenAI")
-        openai_layout = QFormLayout(openai_group)
+        # Configurações principais do LLM
+        main_group = QGroupBox("Configurações Principais")
+        main_layout = QFormLayout(main_group)
 
-        self.openai_api_key = QLineEdit()
-        self.openai_api_key.setEchoMode(QLineEdit.Password)
-        if settings.OPENAI_API_KEY:
-            self.openai_api_key.setText(settings.OPENAI_API_KEY)
-            self.openai_api_key.setPlaceholderText("API key já configurada")
+        self.ucan_api_key = QLineEdit()
+        self.ucan_api_key.setEchoMode(QLineEdit.Password)
+        if settings.UCAN_API_KEY:
+            self.ucan_api_key.setText(settings.UCAN_API_KEY)
+            self.ucan_api_key.setPlaceholderText("API key já configurada")
         else:
-            self.openai_api_key.setPlaceholderText("Digite sua chave de API da OpenAI")
+            self.ucan_api_key.setPlaceholderText("Digite sua chave de API")
 
-        openai_layout.addRow("Chave de API:", self.openai_api_key)
-        layout.addWidget(openai_group)
+        self.ucan_provider = QComboBox()
+        self.ucan_provider.addItems(settings.UCAN_PROVIDER__ENABLED_PROVIDERS)
+        if settings.UCAN_PROVIDER:
+            index = self.ucan_provider.findText(settings.UCAN_PROVIDER)
+            if index >= 0:
+                self.ucan_provider.setCurrentIndex(index)
 
-        # Configurações da Anthropic
-        anthropic_group = QGroupBox("Anthropic")
-        anthropic_layout = QFormLayout(anthropic_group)
+        self.ucan_model = QLineEdit(settings.UCAN_MODEL)
+        self.ucan_model.setPlaceholderText("Ex: gpt-4, claude-3-opus, etc.")
 
-        self.anthropic_api_key = QLineEdit()
-        self.anthropic_api_key.setEchoMode(QLineEdit.Password)
-        if settings.ANTHROPIC_API_KEY:
-            self.anthropic_api_key.setText(settings.ANTHROPIC_API_KEY)
-            self.anthropic_api_key.setPlaceholderText("API key já configurada")
+        main_layout.addRow("Chave de API:", self.ucan_api_key)
+        main_layout.addRow("Provedor:", self.ucan_provider)
+        main_layout.addRow("Modelo:", self.ucan_model)
+        layout.addWidget(main_group)
+
+        # Configurações de fallback
+        fallback_group = QGroupBox("Configurações de Fallback")
+        fallback_layout = QFormLayout(fallback_group)
+
+        self.ucan_fallback_api_key = QLineEdit()
+        self.ucan_fallback_api_key.setEchoMode(QLineEdit.Password)
+        if settings.UCAN_FALLBACK_API_KEY:
+            self.ucan_fallback_api_key.setText(settings.UCAN_FALLBACK_API_KEY)
+            self.ucan_fallback_api_key.setPlaceholderText("API key já configurada")
         else:
-            self.anthropic_api_key.setPlaceholderText(
-                "Digite sua chave de API da Anthropic"
+            self.ucan_fallback_api_key.setPlaceholderText(
+                "Digite sua chave de API de fallback"
             )
 
-        anthropic_layout.addRow("Chave de API:", self.anthropic_api_key)
-        layout.addWidget(anthropic_group)
+        self.ucan_fallback_provider = QComboBox()
+        self.ucan_fallback_provider.addItems(settings.UCAN_PROVIDER__ENABLED_PROVIDERS)
+        if settings.UCAN_FALLBACK_PROVIDER:
+            index = self.ucan_fallback_provider.findText(
+                settings.UCAN_FALLBACK_PROVIDER
+            )
+            if index >= 0:
+                self.ucan_fallback_provider.setCurrentIndex(index)
 
-        # Configurações para modelos locais
-        local_group = QGroupBox("LLM Local")
-        local_layout = QFormLayout(local_group)
+        self.ucan_fallback_model = QLineEdit(settings.UCAN_FALLBACK_MODEL)
+        self.ucan_fallback_model.setPlaceholderText("Ex: gpt-3.5-turbo, claude-2, etc.")
 
-        self.local_llm_url = QLineEdit(settings.LOCAL_LLM_URL)
-        local_layout.addRow("URL:", self.local_llm_url)
+        fallback_layout.addRow("Chave de API:", self.ucan_fallback_api_key)
+        fallback_layout.addRow("Provedor:", self.ucan_fallback_provider)
+        fallback_layout.addRow("Modelo:", self.ucan_fallback_model)
+        layout.addWidget(fallback_group)
 
-        layout.addWidget(local_group)
+        # Configurações do agente
+        agent_group = QGroupBox("Configurações do Agente")
+        agent_layout = QFormLayout(agent_group)
+
+        self.ucan_agent_temperature = QLineEdit(str(settings.UCAN_AGENT__TEMPERATURE))
+        self.ucan_agent_temperature.setPlaceholderText("Ex: 0.7")
+
+        self.ucan_agent_max_tokens = QLineEdit(str(settings.UCAN_AGENT__MAX_TOKENS))
+        self.ucan_agent_max_tokens.setPlaceholderText("Ex: 1000")
+
+        self.ucan_agent_timeout = QLineEdit(str(settings.UCAN_AGENT__TIMEOUT))
+        self.ucan_agent_timeout.setPlaceholderText("Ex: 30")
+
+        agent_layout.addRow("Temperatura:", self.ucan_agent_temperature)
+        agent_layout.addRow("Max Tokens:", self.ucan_agent_max_tokens)
+        agent_layout.addRow("Timeout (s):", self.ucan_agent_timeout)
+        layout.addWidget(agent_group)
 
         # Espaçador para empurrar os widgets para cima
         layout.addStretch()
@@ -195,7 +230,7 @@ class SettingsDialog(QDialog):
         debug_layout = QFormLayout(debug_group)
 
         self.debug_mode = QCheckBox("Habilitar modo de depuração")
-        self.debug_mode.setChecked(settings.DEBUG_MODE)
+        self.debug_mode.setChecked(settings.UCAN_DEBUG)
         debug_layout.addRow("", self.debug_mode)
 
         layout.addWidget(debug_group)
@@ -219,15 +254,24 @@ class SettingsDialog(QDialog):
     def save_settings(self) -> None:
         """Salva as configurações atualizadas."""
         # Atualizar configurações no objeto settings
-        # API
         new_settings = {}
-        new_settings["OPENAI_API_KEY"] = (
-            self.openai_api_key.text() or settings.OPENAI_API_KEY
+
+        # API
+        new_settings["UCAN_API_KEY"] = self.ucan_api_key.text() or settings.UCAN_API_KEY
+        new_settings["UCAN_PROVIDER"] = self.ucan_provider.currentText()
+        new_settings["UCAN_MODEL"] = self.ucan_model.text()
+        new_settings["UCAN_FALLBACK_API_KEY"] = (
+            self.ucan_fallback_api_key.text() or settings.UCAN_FALLBACK_API_KEY
         )
-        new_settings["ANTHROPIC_API_KEY"] = (
-            self.anthropic_api_key.text() or settings.ANTHROPIC_API_KEY
+        new_settings["UCAN_FALLBACK_PROVIDER"] = (
+            self.ucan_fallback_provider.currentText()
         )
-        new_settings["LOCAL_LLM_URL"] = self.local_llm_url.text()
+        new_settings["UCAN_FALLBACK_MODEL"] = self.ucan_fallback_model.text()
+        new_settings["UCAN_AGENT__TEMPERATURE"] = float(
+            self.ucan_agent_temperature.text()
+        )
+        new_settings["UCAN_AGENT__MAX_TOKENS"] = int(self.ucan_agent_max_tokens.text())
+        new_settings["UCAN_AGENT__TIMEOUT"] = int(self.ucan_agent_timeout.text())
 
         # Interface
         new_settings["CUSTOM_THEME"] = self.custom_theme.isChecked()
@@ -235,7 +279,7 @@ class SettingsDialog(QDialog):
         new_settings["SAVE_CHAT_HISTORY"] = self.save_chat_history.isChecked()
 
         # Avançado
-        new_settings["DEBUG_MODE"] = self.debug_mode.isChecked()
+        new_settings["UCAN_DEBUG"] = self.debug_mode.isChecked()
         new_settings["CACHE_DIR"] = self.cache_dir.text()
 
         # Atualiza o arquivo .env
@@ -256,19 +300,23 @@ class SettingsDialog(QDialog):
                 if key in new_settings:
                     value = new_settings[key]
                     if key in [
-                        "OPENAI_API_KEY",
-                        "ANTHROPIC_API_KEY",
-                        "HF_API_KEY",
-                        "LOCAL_LLM_URL",
+                        "UCAN_API_KEY",
+                        "UCAN_FALLBACK_API_KEY",
                         "CACHE_DIR",
                     ]:
                         updated_lines.append(f"{key}={value}\n")
-                    elif key in ["DEBUG_MODE", "CUSTOM_THEME", "SAVE_CHAT_HISTORY"]:
-                        updated_lines.append(f"{key}={str(value)}\n")
-                    elif key in ["FONT_SIZE"]:
+                    elif key in ["UCAN_DEBUG", "CUSTOM_THEME", "SAVE_CHAT_HISTORY"]:
+                        updated_lines.append(f"{key}={str(value).lower()}\n")
+                    elif key in ["UCAN_AGENT__TEMPERATURE"]:
+                        updated_lines.append(f"{key}={value:.1f}\n")
+                    elif key in [
+                        "UCAN_AGENT__MAX_TOKENS",
+                        "UCAN_AGENT__TIMEOUT",
+                        "FONT_SIZE",
+                    ]:
                         updated_lines.append(f"{key}={value}\n")
                     else:
-                        updated_lines.append(line)
+                        updated_lines.append(f"{key}={value}\n")
                 else:
                     updated_lines.append(line)
 

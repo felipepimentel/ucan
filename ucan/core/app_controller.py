@@ -4,16 +4,20 @@ Controlador principal da aplicação UCAN.
 
 import logging
 import os
-from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
 
 from PySide6.QtCore import QObject, Signal
 
 from ucan.config.settings import settings
+from ucan.core.assistant import Assistant
 from ucan.core.conversation import Conversation
+from ucan.core.conversation_type import ConversationType
+from ucan.core.database import db
+from ucan.core.knowledge_base import KnowledgeBase
+from ucan.core.knowledge_manager import KnowledgeManager
 from ucan.core.llm_interface import LLMInterface, MockLLMInterface
-from ucan.core.models import Message
+from ucan.core.message import Message
 from ucan.utils.file_watcher import FileWatcher
 
 logger = logging.getLogger(__name__)
@@ -32,6 +36,13 @@ class AppController(QObject):
     conversation_added = Signal(Conversation)
     error_occurred = Signal(str)
     status_message = Signal(str)
+    conversation_selected = Signal(Conversation)
+    conversations_updated = Signal(list)
+    message_sent = Signal(Message)
+    knowledge_base_created = Signal(KnowledgeBase)
+    knowledge_base_updated = Signal(KnowledgeBase)
+    knowledge_bases_updated = Signal(list)
+    conversation_type_created = Signal(ConversationType)
 
     def __init__(self, language_model_interface: Optional[LLMInterface] = None) -> None:
         """
@@ -48,12 +59,12 @@ class AppController(QObject):
         )
         self.current_conversation: Optional[Conversation] = None
         self._file_watcher = None
+        self.assistant = Assistant()
         self._setup_directories()
 
     def _setup_directories(self) -> None:
         """Configura os diretórios necessários."""
         try:
-            os.makedirs(settings.CONVERSATIONS_DIR, exist_ok=True)
             os.makedirs(settings.CACHE_DIR, exist_ok=True)
             os.makedirs(settings.LOG_DIR, exist_ok=True)
         except Exception as e:
@@ -108,7 +119,12 @@ class AppController(QObject):
             except Exception as e:
                 logger.error(f"Erro ao encerrar hot reload: {e}")
 
-        # Add any other cleanup needed here
+        # Fechar conexão com o banco de dados
+        try:
+            db.close()
+            logger.debug("Conexão com o banco de dados encerrada")
+        except Exception as e:
+            logger.error(f"Erro ao fechar conexão com o banco de dados: {e}")
 
         logger.info("Controlador encerrado com sucesso")
 
@@ -124,26 +140,16 @@ class AppController(QObject):
         except Exception as e:
             logger.error(f"Erro ao atualizar lista de conversas: {e}")
 
-    def get_conversations(self) -> list[Conversation]:
+    def get_conversations(self) -> List[Conversation]:
         """
-        Obtém a lista de conversas.
+        Obtém todas as conversas.
 
         Returns:
-            Lista de conversas carregadas
+            Lista de conversas
         """
-        conversations_dir = settings.CONVERSATIONS_DIR
-        conversations_dir.mkdir(exist_ok=True)
-
-        conversations = []
-        for file_path in conversations_dir.glob("*.json"):
-            try:
-                conversation = Conversation.import_from_file(file_path)
-                if conversation:
-                    conversations.append(conversation)
-            except Exception as e:
-                logger.error("Erro ao carregar conversa %s: %s", file_path, e)
-
-        return sorted(conversations, key=lambda c: c.updated_at, reverse=True)
+        conversations = Conversation.get_all()
+        self.conversations_updated.emit(conversations)
+        return conversations
 
     def select_conversation(self, conversation: Conversation) -> None:
         """
@@ -153,23 +159,29 @@ class AppController(QObject):
             conversation: Conversa a ser selecionada
         """
         self.current_conversation = conversation
-        self.conversation_updated.emit(conversation)
+        self.conversation_selected.emit(conversation)
+        self.get_conversation_knowledge_bases()
 
-    def new_conversation(self, title: Optional[str] = None) -> None:
+    def new_conversation(
+        self, title: Optional[str] = None, type_id: Optional[str] = None
+    ) -> Conversation:
         """
         Cria uma nova conversa.
 
         Args:
             title: Título da conversa (opcional)
-        """
-        if title is None:
-            title = f"Nova Conversa ({datetime.now().strftime('%d/%m/%Y %H:%M')})"
+            type_id: ID do tipo de conversa (opcional)
 
-        conversation = Conversation(title=title)
-        self.current_conversation = conversation
-        self._save_conversation(conversation)
-        self.conversation_created.emit(conversation)
-        self.refresh_conversation_list()
+        Returns:
+            Nova conversa
+        """
+        conversation = Conversation(
+            title=title or "Nova Conversa",
+            type_id=type_id,
+        )
+        self.select_conversation(conversation)
+        self.get_conversations()
+        return conversation
 
     async def send_message(self, content: str) -> None:
         """
@@ -197,7 +209,9 @@ class AppController(QObject):
             )
             self.message_received.emit(error_message)
 
-        self._save_conversation(self.current_conversation)
+        # Atualiza a conversa no banco
+        self.current_conversation.save()
+        self.conversation_updated.emit(self.current_conversation)
 
     def _save_conversation(self, conversation: Conversation) -> None:
         """
@@ -207,17 +221,46 @@ class AppController(QObject):
             conversation: Conversa a ser salva
         """
         try:
-            file_path = conversation.save()
+            db.save_conversation(
+                conversation.id, conversation.title, conversation.metadata
+            )
             self.conversation_updated.emit(conversation)
         except Exception as e:
             logger.error("Erro ao salvar conversa: %s", e)
 
-    def export_conversation(self, export_path: Path) -> bool:
+    def _save_message(self, message: Message) -> None:
         """
-        Exporta a conversa atual.
+        Salva uma mensagem.
 
         Args:
-            export_path: Caminho para exportar a conversa
+            message: Mensagem a ser salva
+        """
+        try:
+            db.save_message(
+                message.id,
+                self.current_conversation.id,
+                message.role,
+                message.content,
+                message.metadata,
+            )
+        except Exception as e:
+            logger.error("Erro ao salvar mensagem: %s", e)
+
+    def save_state(self) -> None:
+        """Salva o estado da aplicação antes de fechar."""
+        try:
+            # We don't need to save anything here as all state is saved in real-time
+            logger.info("Estado da aplicação salvo com sucesso")
+        except Exception as e:
+            logger.error(f"Erro ao salvar estado da aplicação: {e}")
+            raise
+
+    def export_conversation(self, file_path: Path) -> bool:
+        """
+        Exporta a conversa atual para um arquivo.
+
+        Args:
+            file_path: Caminho do arquivo
 
         Returns:
             True se a exportação foi bem sucedida, False caso contrário
@@ -225,35 +268,192 @@ class AppController(QObject):
         if not self.current_conversation:
             return False
 
-        return self.current_conversation.export(export_path)
+        try:
+            self.current_conversation.export_to_file(file_path)
+            return True
+        except Exception as e:
+            logger.error("Erro ao exportar conversa: %s", e)
+            return False
 
-    def import_conversation(self, import_path: Path) -> Optional[str]:
+    def import_conversation(self, file_path: Path) -> Optional[str]:
         """
-        Importa uma conversa.
+        Importa uma conversa de um arquivo.
 
         Args:
-            import_path: Caminho do arquivo a ser importado
+            file_path: Caminho do arquivo
 
         Returns:
-            ID da conversa importada ou None se falhou
+            ID da conversa importada ou None se falhar
         """
         try:
-            conversation = Conversation.import_from_file(import_path)
-            if conversation:
-                self._save_conversation(conversation)
-                self.conversation_created.emit(conversation)
+            conversation = Conversation.import_from_file(file_path)
+            self.get_conversations()
                 return conversation.id
-            return None
         except Exception as e:
             logger.error("Erro ao importar conversa: %s", e)
             return None
 
-    def save_state(self) -> None:
-        """Salva o estado da aplicação antes de fechar."""
-        try:
-            if self.current_conversation:
-                self._save_conversation(self.current_conversation)
-            logger.info("Estado da aplicação salvo com sucesso")
-        except Exception as e:
-            logger.error(f"Erro ao salvar estado da aplicação: {e}")
-            raise
+    def get_conversation_types(self) -> List[ConversationType]:
+        """
+        Obtém todos os tipos de conversação disponíveis.
+
+        Returns:
+            Lista de tipos de conversação
+        """
+        return ConversationType.get_all()
+
+    def create_conversation_type(
+        self, name: str, description: str, metadata: Optional[Dict] = None
+    ) -> ConversationType:
+        """
+        Cria um novo tipo de conversação.
+
+        Args:
+            name: Nome do tipo
+            description: Descrição do tipo
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Tipo de conversação criado
+        """
+        conv_type = ConversationType(
+            name=name, description=description, metadata=metadata
+        )
+        self.conversation_type_created.emit(conv_type)
+        return conv_type
+
+    def create_knowledge_base(
+        self,
+        name: str,
+        description: str,
+        scope: str,
+        metadata: Optional[Dict] = None,
+    ) -> Optional[KnowledgeBase]:
+        """
+        Cria uma nova base de conhecimento.
+
+        Args:
+            name: Nome da base
+            description: Descrição da base
+            scope: Escopo da base (global, type ou conversation)
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Base de conhecimento criada ou None se falhar
+        """
+        if scope == "global":
+            base = KnowledgeManager.create_global_base(name, description, metadata)
+        elif scope == "type":
+            if not self.current_conversation or not self.current_conversation.type_id:
+                return None
+            type_ = self.current_conversation.get_type()
+            base = type_.create_knowledge_base(name, description, metadata)
+        elif scope == "conversation":
+            if not self.current_conversation:
+                return None
+            base = self.current_conversation.create_knowledge_base(
+                name, description, metadata
+            )
+        else:
+            return None
+
+        self.knowledge_base_created.emit(base)
+        return base
+
+    def get_global_knowledge_bases(self) -> List[KnowledgeBase]:
+        """
+        Obtém todas as bases de conhecimento globais.
+
+        Returns:
+            Lista de bases de conhecimento globais
+        """
+        bases = KnowledgeManager.get_global_bases()
+        self.knowledge_bases_updated.emit(bases)
+        return bases
+
+    def add_files_to_knowledge_base(
+        self,
+        base: KnowledgeBase,
+        files: List[Path],
+        metadata: Optional[Dict] = None,
+    ) -> List[str]:
+        """
+        Adiciona múltiplos arquivos a uma base de conhecimento.
+
+        Args:
+            base: Base de conhecimento
+            files: Lista de caminhos de arquivos
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Lista de IDs dos itens criados
+        """
+        item_ids = KnowledgeManager.add_files_to_base(base, files, metadata)
+        self.knowledge_base_updated.emit(base)
+        return item_ids
+
+    def add_directory_to_knowledge_base(
+        self,
+        base: KnowledgeBase,
+        directory: Path,
+        pattern: str = "*",
+        recursive: bool = True,
+        metadata: Optional[Dict] = None,
+    ) -> List[str]:
+        """
+        Adiciona todos os arquivos de um diretório a uma base de conhecimento.
+
+        Args:
+            base: Base de conhecimento
+            directory: Caminho do diretório
+            pattern: Padrão para filtrar arquivos (ex: "*.txt")
+            recursive: Se deve incluir subdiretórios
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Lista de IDs dos itens criados
+        """
+        item_ids = KnowledgeManager.add_directory_to_base(
+            base, directory, pattern, recursive, metadata
+        )
+        self.knowledge_base_updated.emit(base)
+        return item_ids
+
+    def get_conversation_knowledge_bases(self) -> List[KnowledgeBase]:
+        """
+        Obtém todas as bases de conhecimento relevantes para a conversa atual.
+        Inclui bases globais, bases do tipo da conversa e bases específicas da conversa.
+
+        Returns:
+            Lista de bases de conhecimento
+        """
+        if not self.current_conversation:
+            return []
+
+        bases = self.current_conversation.get_knowledge_bases()
+        self.knowledge_bases_updated.emit(bases)
+        self.assistant.set_knowledge_bases(bases)
+        return bases
+
+    def create_conversation_knowledge_base(
+        self, name: str, description: str, metadata: Optional[Dict] = None
+    ) -> Optional[KnowledgeBase]:
+        """
+        Cria uma nova base de conhecimento para a conversa atual.
+
+        Args:
+            name: Nome da base
+            description: Descrição da base
+            metadata: Metadados adicionais (opcional)
+
+        Returns:
+            Base de conhecimento criada ou None se não houver conversa atual
+        """
+        if not self.current_conversation:
+            return None
+
+        base = self.current_conversation.create_knowledge_base(
+            name, description, metadata
+        )
+        self.knowledge_base_created.emit(base)
+        return base

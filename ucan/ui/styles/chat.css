@@ -1,0 +1,439 @@
+/* Estilos para o widget de chat */
+
+/* Container principal */
+#chatWidget {
+    background-color: #1a1b26;
+}
+
+/* Título do chat */
+#chatTitle {
+    font-size: 22px;
+    font-weight: 600;
+    padding: 24px 28px;
+    background-color: #24283b;
+    color: #c0caf5;
+    border-bottom: 1px solid #32344a;
+}
+
+/* Área de mensagens */
+#messageScroll {
+    background-color: #1a1b26;
+    border: none;
+    padding: 12px 0;
+}
+
+#messageScroll QScrollBar:vertical {
+    background-color: transparent;
+    width: 12px;
+    margin: 2px;
+}
+
+#messageScroll QScrollBar::handle:vertical {
+    background-color: #414868;
+    border-radius: 6px;
+    min-height: 40px;
+    margin: 2px;
+}
+
+#messageScroll QScrollBar::handle:vertical:hover {
+    background-color: #565f89;
+}
+
+#messageScroll QScrollBar::add-line:vertical,
+#messageScroll QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+#messageScroll QScrollBar::add-page:vertical,
+#messageScroll QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+/* Container de mensagens */
+#messageContainer {
+    padding: 16px 20px;
+    border-radius: 16px;
+    margin: 12px 0;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Mensagens */
+#message_user #messageContainer {
+    background-color: #2c2e3b;
+    margin-left: 64px;
+    margin-right: 24px;
+    border: 1px solid rgba(122, 162, 247, 0.1);
+}
+
+#message_assistant #messageContainer {
+    background-color: #1f2937;
+    margin-right: 64px;
+    margin-left: 24px;
+    border: 1px solid rgba(247, 118, 142, 0.1);
+}
+
+#message_system #messageContainer {
+    background-color: #24283b;
+    margin: 0 96px;
+    border: 1px solid #32344a;
+}
+
+#messageContainer:hover {
+    -webkit-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+/* Cabeçalho da mensagem */
+#messageHeader {
+    border-bottom: 1px solid rgba(50, 52, 74, 0.5);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+#roleContainer {
+    background-color: rgba(122, 162, 247, 0.08);
+    border-radius: 8px;
+    padding: 6px 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+#message_user #roleContainer {
+    background-color: rgba(247, 118, 142, 0.08);
+}
+
+#roleContainer:hover {
+    background-color: rgba(122, 162, 247, 0.15);
+}
+
+#message_user #roleContainer:hover {
+    background-color: rgba(247, 118, 142, 0.15);
+}
+
+#roleIcon {
+    min-width: 24px;
+    min-height: 24px;
+    opacity: 0.9;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#roleIcon:hover {
+    opacity: 1;
+}
+
+#roleName {
+    font-weight: 600;
+    font-size: 14px;
+    transition: color 0.2s ease-in-out;
+}
+
+#message_assistant #roleName {
+    color: #7aa2f7;
+}
+
+#message_user #roleName {
+    color: #f7768e;
+}
+
+#timestampLabel {
+    color: #565f89;
+    font-size: 12px;
+    transition: color 0.2s ease-in-out;
+}
+
+#timestampLabel:hover {
+    color: #9aa5ce;
+}
+
+#statusIcon {
+    min-width: 16px;
+    min-height: 16px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease-in-out;
+}
+
+#statusIcon:hover {
+    opacity: 1;
+}
+
+/* Conteúdo da mensagem */
+#messageContent {
+    color: #c0caf5;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 0 4px;
+}
+
+#messageContent a {
+    color: #7aa2f7;
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+#messageContent a:hover {
+    color: #89b4fa;
+    border-bottom-color: #89b4fa;
+}
+
+#messageContent code {
+    background-color: rgba(26, 27, 38, 0.5);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    border: 1px solid rgba(50, 52, 74, 0.5);
+    transition: all 0.2s ease-in-out;
+}
+
+#messageContent code:hover {
+    background-color: rgba(26, 27, 38, 0.8);
+    border-color: #414868;
+}
+
+#messageContent pre {
+    background-color: rgba(26, 27, 38, 0.5);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(50, 52, 74, 0.5);
+    margin: 12px 0;
+    overflow-x: auto;
+    transition: all 0.2s ease-in-out;
+}
+
+#messageContent pre:hover {
+    background-color: rgba(26, 27, 38, 0.8);
+    border-color: #414868;
+}
+
+#messageContent pre code {
+    background-color: transparent;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+}
+
+#messageContent blockquote {
+    border-left: 4px solid #414868;
+    margin: 12px 0;
+    padding: 8px 16px;
+    color: #9aa5ce;
+    background-color: rgba(65, 72, 104, 0.1);
+    border-radius: 0 8px 8px 0;
+    transition: all 0.2s ease-in-out;
+}
+
+#messageContent blockquote:hover {
+    border-left-color: #7aa2f7;
+    background-color: rgba(65, 72, 104, 0.2);
+}
+
+/* Separador de data */
+#dateSeparator {
+    margin: 32px 0;
+    opacity: 0.8;
+}
+
+#separatorLine {
+    background-color: #32344a;
+    height: 1px;
+}
+
+#separatorText {
+    color: #565f89;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 20px;
+    transition: color 0.2s ease-in-out;
+}
+
+#separatorText:hover {
+    color: #9aa5ce;
+}
+
+/* Container de input */
+#inputContainer {
+    background-color: #24283b;
+    border-top: 1px solid #32344a;
+    padding: 20px;
+}
+
+/* Barra de formatação */
+#formatBar {
+    background-color: transparent;
+    padding: 8px 0;
+    margin-bottom: 8px;
+}
+
+/* Botões de formatação */
+[id^="formatButton_"] {
+    background-color: rgba(122, 162, 247, 0.08);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 36px;
+    min-height: 36px;
+    transition: all 0.2s ease-in-out;
+}
+
+[id^="formatButton_"]:hover {
+    background-color: rgba(122, 162, 247, 0.15);
+    border-color: rgba(122, 162, 247, 0.3);
+    transform: translateY(-1px);
+}
+
+[id^="formatButton_"]:pressed {
+    background-color: rgba(122, 162, 247, 0.25);
+    border-color: #7aa2f7;
+    transform: translateY(1px);
+}
+
+[id^="formatButton_"]:checked {
+    background-color: rgba(122, 162, 247, 0.3);
+    border-color: #7aa2f7;
+}
+
+/* Campo de texto */
+#inputText {
+    background-color: #1f2335;
+    border: 1px solid #32344a;
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #c0caf5;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#inputText:hover {
+    border-color: #414868;
+    background-color: #1a1b26;
+}
+
+#inputText:focus {
+    outline: none;
+    border-color: #7aa2f7;
+    background-color: #1a1b26;
+    -webkit-box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.15);
+    box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.15);
+}
+
+#inputText::placeholder {
+    color: #565f89;
+    font-style: italic;
+}
+
+/* Botão de enviar */
+#sendButton {
+    background-color: #7aa2f7;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-box-shadow: 0 4px 12px rgba(122, 162, 247, 0.2);
+    box-shadow: 0 4px 12px rgba(122, 162, 247, 0.2);
+}
+
+#sendButton:hover:not(:disabled) {
+    background-color: #89b4fa;
+    transform: translateY(-2px);
+    -webkit-box-shadow: 0 6px 16px rgba(122, 162, 247, 0.25);
+    box-shadow: 0 6px 16px rgba(122, 162, 247, 0.25);
+}
+
+#sendButton:pressed:not(:disabled) {
+    transform: translateY(1px);
+    -webkit-box-shadow: 0 2px 8px rgba(122, 162, 247, 0.15);
+    box-shadow: 0 2px 8px rgba(122, 162, 247, 0.15);
+}
+
+#sendButton:disabled {
+    background-color: #4c4f69;
+    cursor: not-allowed;
+    opacity: 0.7;
+    -webkit-box-shadow: none;
+    box-shadow: none;
+}
+
+/* Contador de caracteres */
+#charCounter {
+    color: #565f89;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 16px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#charCounter[warning="true"] {
+    color: #f7768e;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Painel de conhecimento */
+#knowledgePanel {
+    background-color: #24283b;
+    border-left: 1px solid #32344a;
+    padding: 20px;
+}
+
+#knowledgeTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: #c0caf5;
+    margin-bottom: 16px;
+}
+
+#knowledgeList {
+    background-color: transparent;
+    border: none;
+}
+
+#knowledgeList::item {
+    background-color: #1f2335;
+    border: 1px solid #32344a;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 16px;
+    transition: all 0.2s ease-in-out;
+}
+
+#knowledgeList::item:hover {
+    background-color: #2a2e44;
+    border-color: #414868;
+    transform: translateX(4px);
+}
+
+#knowledgeBaseName {
+    font-weight: 600;
+    color: #c0caf5;
+    font-size: 15px;
+}
+
+#knowledgeBaseScope {
+    color: #565f89;
+    font-size: 13px;
+    transition: color 0.2s ease-in-out;
+}
+
+#knowledgeBaseScope:hover {
+    color: #9aa5ce;
+}
+
+#knowledgeBaseDescription {
+    color: #9aa5ce;
+    font-size: 14px;
+    margin-top: 12px;
+    line-height: 1.5;
+} 

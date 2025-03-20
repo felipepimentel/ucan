@@ -174,3 +174,32 @@ cython_debug/
 .pypirc
 
 .specstory
+
+logs
+conversations
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# UCAN specific
+.env
+~/.ucan/
+.ucan/
+logs/
+cache/
+conversations/
+*.duckdb
+*.duckdb.wal
+
+# Misc
+.DS_Store
+Thumbs.db

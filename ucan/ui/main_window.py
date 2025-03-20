@@ -2,179 +2,347 @@
 Janela principal da aplicação UCAN.
 """
 
-import logging
+from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (
+    QDockWidget,
     QFileDialog,
-    QHBoxLayout,
     QMainWindow,
+    QMenuBar,
     QMessageBox,
     QSplitter,
     QStatusBar,
+    QToolBar,
+    QVBoxLayout,
     QWidget,
 )
 
-from ucan.config.constants import (
-    APP_VERSION,
-    RESOURCES_DIR,
-)
 from ucan.core.app_controller import AppController
+from ucan.core.knowledge_base import KnowledgeBase
 from ucan.ui.chat_widget import ChatWidget
-from ucan.ui.conversation_list import ConversationList
+from ucan.ui.conversation_list_widget import ConversationListWidget
+from ucan.ui.conversation_type_dialog import ConversationTypeDialog
+from ucan.ui.dialogs.theme_dialog import ThemeDialog
+from ucan.ui.knowledge_base_dialog import KnowledgeBaseDialog
+from ucan.ui.new_conversation_dialog import NewConversationDialog
+from ucan.ui.theme_manager import theme_manager
 
 
 class MainWindow(QMainWindow):
-    """Janela principal da aplicação UCAN."""
+    """Janela principal da aplicação."""
 
-    error_occurred = Signal(str)  # Sinal emitido quando ocorre um erro
-    status_message = Signal(str)  # Sinal emitido para atualizar a barra de status
+    def __init__(self, controller: AppController):
+        """
+        Inicializa a janela principal.
 
-    def __init__(self, controller: AppController) -> None:
-        """Inicializa a janela principal."""
+        Args:
+            controller: Controlador da aplicação
+        """
         super().__init__()
-        self.logger = logging.getLogger(__name__)
         self.controller = controller
-        self._setup_window()
-        self._setup_ui()
-        self._setup_signals()
-        self._setup_menu()
-
-    def _setup_window(self):
-        self.setWindowTitle("UCAN - Universal Chat Assistant Network")
-        self.setWindowIcon(QIcon(str(RESOURCES_DIR / "icons" / "app_icon.svg")))
-        self.resize(1200, 800)
+        self.setWindowTitle("UCAN")
         self.setMinimumSize(800, 600)
+        self._setup_ui()
+        self._setup_menu()
+        self._setup_signals()
+        self._apply_theme(theme_manager.get_current_theme())
 
-    def _setup_ui(self) -> None:
+    def _setup_ui(self):
         """Configura a interface do usuário."""
+        self.setWindowTitle("UCAN")
+        self.setMinimumSize(QSize(1000, 700))
+
+        # Widget central
         central_widget = QWidget()
-        central_widget.setObjectName("centralWidget")
         self.setCentralWidget(central_widget)
 
-        layout = QHBoxLayout(central_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        # Layout principal
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
+        central_widget.setLayout(main_layout)
 
-        self.splitter = QSplitter(Qt.Horizontal)
-        self.splitter.setChildrenCollapsible(False)
-        layout.addWidget(self.splitter)
+        # Barra de ferramentas moderna
+        toolbar = QToolBar()
+        toolbar.setMovable(False)
+        toolbar.setIconSize(QSize(24, 24))
+        toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        toolbar.setStyleSheet("""
+            QToolBar {
+                spacing: 8px;
+                padding: 4px 8px;
+                background-color: #24283b;
+                border-bottom: 1px solid #32344a;
+            }
+            QToolButton {
+                padding: 6px 12px;
+                border-radius: 6px;
+                color: #c0caf5;
+            }
+            QToolButton:hover {
+                background-color: #414868;
+            }
+            QToolButton:pressed {
+                background-color: #565f89;
+            }
+        """)
+        self.addToolBar(toolbar)
 
-        self.conversation_list = ConversationList(self.controller)
-        self.splitter.addWidget(self.conversation_list)
+        # Ações da barra de ferramentas com ícones modernos
+        new_conversation_action = QAction(
+            QIcon.fromTheme("document-new"), "Nova Conversa", self
+        )
+        new_conversation_action.triggered.connect(self._show_new_conversation_dialog)
+        new_conversation_action.setStatusTip("Criar uma nova conversa")
+        toolbar.addAction(new_conversation_action)
 
+        new_type_action = QAction(QIcon.fromTheme("folder-new"), "Novo Tipo", self)
+        new_type_action.triggered.connect(self._show_conversation_type_dialog)
+        new_type_action.setStatusTip("Criar um novo tipo de conversa")
+        toolbar.addAction(new_type_action)
+
+        new_knowledge_base_action = QAction(
+            QIcon.fromTheme("document-properties"), "Nova Base", self
+        )
+        new_knowledge_base_action.triggered.connect(self._show_knowledge_base_dialog)
+        new_knowledge_base_action.setStatusTip("Criar uma nova base de conhecimento")
+        toolbar.addAction(new_knowledge_base_action)
+
+        # Splitter principal com proporções melhores
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setHandleWidth(1)
+        splitter.setStyleSheet("""
+            QSplitter::handle {
+                background-color: #32344a;
+            }
+            QSplitter::handle:hover {
+                background-color: #7aa2f7;
+            }
+        """)
+        main_layout.addWidget(splitter)
+
+        # Lista de conversas com estilo moderno
+        self.conversation_list = ConversationListWidget()
+        self.conversation_list.setMinimumWidth(280)
+        self.conversation_list.setMaximumWidth(380)
+        splitter.addWidget(self.conversation_list)
+
+        # Widget de chat
         self.chat_widget = ChatWidget(self.controller)
-        self.splitter.addWidget(self.chat_widget)
+        splitter.addWidget(self.chat_widget)
 
-        self.splitter.setStretchFactor(0, 0)
-        self.splitter.setStretchFactor(1, 1)
+        # Ajusta o tamanho inicial do splitter (25% lista, 75% chat)
+        splitter.setSizes([250, 750])
 
+        # Barra de status moderna
         self.status_bar = QStatusBar()
-        self.status_bar.setObjectName("statusBar")
         self.setStatusBar(self.status_bar)
+        self.status_bar.setStyleSheet("""
+            QStatusBar {
+                background-color: #24283b;
+                color: #a9b1d6;
+                border-top: 1px solid #32344a;
+                padding: 4px 8px;
+            }
+        """)
+        self.status_bar.showMessage("Pronto")
 
-    def _setup_signals(self) -> None:
-        """Configura os sinais da interface."""
-        self.error_occurred.connect(self._show_error_dialog)
-        self.status_message.connect(self.status_bar.showMessage)
-        self.controller.initialization_failed.connect(self._show_error_dialog)
-
-    def _setup_menu(self) -> None:
+    def _setup_menu(self):
         """Configura o menu da aplicação."""
-        menu_bar = self.menuBar()
+        menu_bar = QMenuBar()
+        self.setMenuBar(menu_bar)
 
-        file_menu = menu_bar.addMenu("&Arquivo")
+        # Menu Arquivo
+        file_menu = menu_bar.addMenu("Arquivo")
 
-        new_action = QAction(
-            QIcon(str(RESOURCES_DIR / "icons" / "new.svg")), "&Nova Conversa", self
-        )
-        new_action.setShortcut("Ctrl+N")
-        new_action.triggered.connect(self._new_conversation)
-        file_menu.addAction(new_action)
-
-        file_menu.addSeparator()
-
-        export_action = QAction(
-            QIcon(str(RESOURCES_DIR / "icons" / "export.svg")),
-            "&Exportar Conversa",
-            self,
-        )
-        export_action.setShortcut("Ctrl+E")
-        export_action.triggered.connect(self._export_conversation)
-        file_menu.addAction(export_action)
-
-        import_action = QAction(
-            QIcon(str(RESOURCES_DIR / "icons" / "import.svg")),
-            "&Importar Conversa",
-            self,
-        )
+        import_action = QAction("Importar Conversa", self)
         import_action.setShortcut("Ctrl+I")
-        import_action.triggered.connect(self._import_conversation)
+        import_action.triggered.connect(self._on_import_conversation)
         file_menu.addAction(import_action)
 
+        export_action = QAction("Exportar Conversa", self)
+        export_action.setShortcut("Ctrl+E")
+        export_action.triggered.connect(self._on_export_conversation)
+        file_menu.addAction(export_action)
+
+        theme_action = QAction("&Temas...", self)
+        theme_action.setStatusTip("Gerenciar temas")
+        theme_action.triggered.connect(self._show_theme_dialog)
+        file_menu.addAction(theme_action)
+
         file_menu.addSeparator()
 
-        exit_action = QAction(
-            QIcon(str(RESOURCES_DIR / "icons" / "exit.svg")), "Sai&r", self
-        )
+        exit_action = QAction("Sair", self)
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
 
-        help_menu = menu_bar.addMenu("A&juda")
+        # Menu Exibir
+        view_menu = menu_bar.addMenu("Exibir")
 
-        about_action = QAction(
-            QIcon(str(RESOURCES_DIR / "icons" / "about.svg")), "&Sobre", self
-        )
-        about_action.triggered.connect(self._show_about_dialog)
+        knowledge_action = QAction("Bases de Conhecimento", self)
+        knowledge_action.setCheckable(True)
+        knowledge_action.setChecked(True)
+        knowledge_action.triggered.connect(self._on_toggle_knowledge_base)
+        view_menu.addAction(knowledge_action)
+
+        # Menu Configurações
+        settings_menu = menu_bar.addMenu("Configurações")
+
+        # Menu Ajuda
+        help_menu = menu_bar.addMenu("Ajuda")
+
+        # About action
+        about_action = QAction("Sobre", self)
+        about_action.setStatusTip("Sobre o UCAN")
+        about_action.triggered.connect(self._show_about)
         help_menu.addAction(about_action)
 
-    def _show_error_dialog(self, message: str) -> None:
-        """Mostra uma caixa de diálogo de erro."""
+    def _setup_signals(self):
+        """Configura os sinais da aplicação."""
+        # Sinais do controller
+        self.controller.conversations_updated.connect(
+            self.conversation_list.set_conversations
+        )
+        self.controller.conversation_selected.connect(self.chat_widget.set_conversation)
+        self.controller.conversation_type_created.connect(
+            self._on_conversation_type_created
+        )
+        self.controller.knowledge_base_created.connect(self._on_knowledge_base_created)
+
+        # Sinais da lista de conversas
+        self.conversation_list.conversation_selected.connect(
+            self.controller.select_conversation
+        )
+        self.conversation_list.new_conversation_requested.connect(
+            self._show_new_conversation_dialog
+        )
+
+        # Atualiza a lista de tipos de conversa
+        self.conversation_list.set_conversation_types(
+            self.controller.get_conversation_types()
+        )
+
+        theme_manager.theme_changed.connect(self._apply_theme)
+
+    def _show_new_conversation_dialog(self):
+        """Exibe o diálogo de nova conversa."""
+        dialog = NewConversationDialog(
+            self,
+            conversation_types=self.controller.get_conversation_types(),
+        )
+        if dialog.exec():
+            name, conv_type = dialog.get_values()
+            self.controller.create_conversation(name, conv_type)
+
+    def _show_conversation_type_dialog(self):
+        """Exibe o diálogo de novo tipo de conversa."""
+        dialog = ConversationTypeDialog(self)
+        if dialog.exec():
+            name, description = dialog.get_values()
+            self.controller.create_conversation_type(name, description)
+
+    def _show_knowledge_base_dialog(self):
+        """Exibe o diálogo de nova base de conhecimento."""
+        dialog = KnowledgeBaseDialog(self)
+        if dialog.exec():
+            name, description, scope = dialog.get_values()
+            self.controller.create_knowledge_base(name, description, scope)
+
+    def _on_import_conversation(self):
+        """Manipula a importação de uma conversa."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Importar Conversa",
+            str(Path.home()),
+            "Arquivos JSON (*.json)",
+        )
+
+        if file_path:
+            conversation_id = self.controller.import_conversation(Path(file_path))
+            if conversation_id:
+                QMessageBox.information(
+                    self, "Sucesso", "Conversa importada com sucesso!"
+                )
+            else:
+                QMessageBox.warning(
+                    self, "Erro", "Não foi possível importar a conversa."
+                )
+
+    def _on_export_conversation(self):
+        """Manipula a exportação de uma conversa."""
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Exportar Conversa",
+            str(Path.home()),
+            "Arquivos JSON (*.json)",
+        )
+
+        if file_path:
+            if self.controller.export_conversation(Path(file_path)):
+                QMessageBox.information(
+                    self, "Sucesso", "Conversa exportada com sucesso!"
+                )
+            else:
+                QMessageBox.warning(
+                    self, "Erro", "Não foi possível exportar a conversa."
+                )
+
+    def _on_toggle_knowledge_base(self, checked: bool):
+        """
+        Manipula a exibição/ocultação do dock de bases de conhecimento.
+
+        Args:
+            checked: Se o dock deve ser exibido
+        """
+        for dock in self.findChildren(QDockWidget):
+            if dock.windowTitle() == "Bases de Conhecimento":
+                dock.setVisible(checked)
+
+    def _show_error(self, message: str):
+        """
+        Exibe uma mensagem de erro.
+
+        Args:
+            message: Mensagem de erro
+        """
         QMessageBox.critical(self, "Erro", message)
 
-    def _show_about_dialog(self):
+    def _on_knowledge_base_created(self, base: KnowledgeBase):
+        """
+        Manipula a criação de uma base de conhecimento.
+
+        Args:
+            base: Base de conhecimento criada
+        """
+        QMessageBox.information(
+            self, "Sucesso", f"Base de conhecimento '{base.name}' criada com sucesso!"
+        )
+
+    def _on_conversation_type_created(self):
+        """Chamado quando um novo tipo de conversa é criado."""
+        self.conversation_list.set_conversation_types(
+            self.controller.get_conversation_types()
+        )
+        QMessageBox.information(self, "Sucesso", "Tipo de conversa criado com sucesso!")
+
+    def _show_theme_dialog(self):
+        """Show the theme management dialog."""
+        dialog = ThemeDialog(self)
+        dialog.exec()
+
+    def _show_about(self):
+        """Show the about dialog."""
         QMessageBox.about(
             self,
             "Sobre o UCAN",
-            f"""<h3>UCAN - Universal Chat Assistant Network</h3>
-            <p>Versão {APP_VERSION}</p>
-            <p>Um assistente de chat universal e extensível.</p>""",
+            "UCAN v0.1.0\n\n"
+            "Um assistente de IA conversacional para ajudar em tarefas de programação.\n\n"
+            "© 2024 UCAN Team",
         )
 
-    def _new_conversation(self) -> None:
-        """Cria uma nova conversa."""
-        self.controller.new_conversation()
-
-    def _export_conversation(self) -> None:
-        """Exporta a conversa atual."""
-        file_path, _ = QFileDialog.getSaveFileName(
-            self, "Exportar Conversa", "", "Arquivos JSON (*.json)"
-        )
-        if file_path:
-            try:
-                self.controller.export_conversation(file_path)
-                self.status_message.emit("Conversa exportada com sucesso!")
-            except Exception as e:
-                self.error_occurred.emit(f"Erro ao exportar conversa: {str(e)}")
-
-    def _import_conversation(self) -> None:
-        """Importa uma conversa."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Importar Conversa", "", "Arquivos JSON (*.json)"
-        )
-        if file_path:
-            try:
-                self.controller.import_conversation(file_path)
-                self.status_message.emit("Conversa importada com sucesso!")
-            except Exception as e:
-                self.error_occurred.emit(f"Erro ao importar conversa: {str(e)}")
-
-    def closeEvent(self, event):
-        try:
-            self.controller.save_state()
-            event.accept()
-        except Exception as e:
-            self.error_occurred.emit(f"Erro ao salvar estado: {str(e)}")
-            event.ignore()
+    def _apply_theme(self, theme):
+        """Apply the current theme."""
+        self.setStyleSheet(theme.get_stylesheet())

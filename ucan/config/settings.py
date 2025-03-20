@@ -2,9 +2,10 @@
 Configurações carregadas de variáveis de ambiente.
 """
 
+import json
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 
@@ -20,15 +21,59 @@ class Settings:
 
     ROOT_DIR: Path = ROOT_DIR
 
-    # Configurações de API
-    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
-    ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
-    HF_API_KEY: Optional[str] = os.getenv("HF_API_KEY")
-    LOCAL_LLM_URL: str = os.getenv("LOCAL_LLM_URL", "http://localhost:11434")
+    # Configurações principais do LLM
+    UCAN_API_KEY: str = os.getenv("UCAN_API_KEY", "")
+    UCAN_PROVIDER: str = os.getenv("UCAN_PROVIDER", "")
+    UCAN_MODEL: str = os.getenv("UCAN_MODEL", "")
+    UCAN_ENV: str = os.getenv("UCAN_ENV", "development")
+    UCAN_DEBUG: bool = os.getenv("UCAN_DEBUG", "False").lower() == "true"
+
+    # Configurações de fallback
+    UCAN_FALLBACK_PROVIDER: str = os.getenv("UCAN_FALLBACK_PROVIDER", "")
+    UCAN_FALLBACK_MODEL: str = os.getenv("UCAN_FALLBACK_MODEL", "")
+    UCAN_FALLBACK_API_KEY: str = os.getenv("UCAN_FALLBACK_API_KEY", "")
+
+    # Configurações de provedores
+    UCAN_PROVIDER__ENABLED_PROVIDERS: List[str] = json.loads(
+        os.getenv(
+            "UCAN_PROVIDER__ENABLED_PROVIDERS",
+            '["openai", "anthropic", "openrouter", "stackspot", "local"]',
+        )
+    )
+    UCAN_PROVIDER__RATE_LIMITS: Dict[str, int] = json.loads(
+        os.getenv(
+            "UCAN_PROVIDER__RATE_LIMITS",
+            '{"openai": 60, "anthropic": 60, "openrouter": 60, "stackspot": 60}',
+        )
+    )
+
+    # Configurações do agente
+    UCAN_AGENT__MODEL_TYPE: str = os.getenv("UCAN_AGENT__MODEL_TYPE", "")
+    UCAN_AGENT__TEMPERATURE: float = float(os.getenv("UCAN_AGENT__TEMPERATURE", "0.7"))
+    UCAN_AGENT__MAX_TOKENS: int = int(os.getenv("UCAN_AGENT__MAX_TOKENS", "1000"))
+    UCAN_AGENT__TIMEOUT: int = int(os.getenv("UCAN_AGENT__TIMEOUT", "30"))
+
+    # Configurações de memória
+    UCAN_MEMORY__IMPORTANCE_THRESHOLD: float = float(
+        os.getenv("UCAN_MEMORY__IMPORTANCE_THRESHOLD", "0.5")
+    )
+    UCAN_MEMORY__VECTOR_STORE_TYPE: str = os.getenv(
+        "UCAN_MEMORY__VECTOR_STORE_TYPE", "faiss"
+    )
+    UCAN_MEMORY__EMBEDDING_SIZE: int = int(
+        os.getenv("UCAN_MEMORY__EMBEDDING_SIZE", "512")
+    )
+    UCAN_MEMORY__CACHE_TTL: int = int(os.getenv("UCAN_MEMORY__CACHE_TTL", "3600"))
+    UCAN_MEMORY__MAX_SHORT_TERM_MEMORIES: int = int(
+        os.getenv("UCAN_MEMORY__MAX_SHORT_TERM_MEMORIES", "100")
+    )
+    UCAN_MEMORY__TEXT_CHUNK_SIZE: int = int(
+        os.getenv("UCAN_MEMORY__TEXT_CHUNK_SIZE", "1000")
+    )
+    UCAN_MEMORY__TEXT_OVERLAP: int = int(os.getenv("UCAN_MEMORY__TEXT_OVERLAP", "100"))
 
     # Configurações de aplicação
-    DEBUG: bool = os.getenv("DEBUG", "False").lower() == "true"
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_LEVEL: str = os.getenv("UCAN_LOG_LEVEL", "INFO")
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", str(ROOT_DIR / "logs")))
     CACHE_DIR: Path = Path(os.getenv("CACHE_DIR", str(ROOT_DIR / ".cache")))
     CONVERSATIONS_DIR: Path = Path(
@@ -56,17 +101,27 @@ class Settings:
         return getattr(cls, key, default)
 
     @classmethod
-    def has_api_keys(cls) -> bool:
-        """Verifica se pelo menos uma chave de API está configurada."""
-        return any([cls.OPENAI_API_KEY, cls.ANTHROPIC_API_KEY, cls.HF_API_KEY])
+    def has_api_key(cls) -> bool:
+        """Verifica se há uma chave de API configurada."""
+        return bool(cls.UCAN_API_KEY or cls.UCAN_FALLBACK_API_KEY)
 
     @classmethod
-    def get_api_keys(cls) -> Dict[str, Optional[str]]:
-        """Retorna todas as chaves de API configuradas."""
+    def get_provider_config(cls) -> Dict[str, Any]:
+        """Retorna a configuração do provedor atual."""
+        provider = cls.UCAN_PROVIDER or cls.UCAN_FALLBACK_PROVIDER
+        model = cls.UCAN_MODEL or cls.UCAN_FALLBACK_MODEL
+        api_key = cls.UCAN_API_KEY or cls.UCAN_FALLBACK_API_KEY
+
+        if not provider or not model or not api_key:
+            return {}
+
         return {
-            "openai": cls.OPENAI_API_KEY,
-            "anthropic": cls.ANTHROPIC_API_KEY,
-            "huggingface": cls.HF_API_KEY,
+            "provider": provider,
+            "model": model,
+            "api_key": api_key,
+            "timeout": cls.UCAN_AGENT__TIMEOUT,
+            "temperature": cls.UCAN_AGENT__TEMPERATURE,
+            "max_tokens": cls.UCAN_AGENT__MAX_TOKENS,
         }
 
     @classmethod
@@ -77,21 +132,38 @@ class Settings:
 
         with open(ENV_PATH, "w", encoding="utf-8") as f:
             f.write(
-                """# Configurações de desenvolvimento
-DEBUG=true
-LOG_LEVEL=DEBUG
+                """# UCAN Configuration
+UCAN_API_KEY=
+UCAN_PROVIDER=openai
+UCAN_MODEL=gpt-4-turbo-preview
+UCAN_ENV=development
+UCAN_DEBUG=true
 
-# Configurações de tema
-DARK_THEME=true
-THEME_COLOR="#2563eb"
+# UCAN API Keys (for LLM)
+UCAN_FALLBACK_PROVIDER=openrouter
+UCAN_FALLBACK_MODEL=openai/gpt-4-turbo
+UCAN_FALLBACK_API_KEY=
 
-# Configurações de LLM
-DEFAULT_LLM_MODEL="gpt-3.5-turbo"
-DEFAULT_LLM_TEMPERATURE=0.7
-DEFAULT_LLM_MAX_TOKENS=4000
-DEFAULT_LLM_API_TIMEOUT=60
+# Provider Configuration
+UCAN_PROVIDER__ENABLED_PROVIDERS='["openai", "anthropic", "openrouter", "stackspot", "local"]'
+UCAN_PROVIDER__RATE_LIMITS='{"openai": 60, "anthropic": 60, "openrouter": 60, "stackspot": 60}'
 
-# Configurações de interface
+# Agent Configuration
+UCAN_AGENT__MODEL_TYPE=openai/gpt-4-turbo
+UCAN_AGENT__TEMPERATURE=0.7
+UCAN_AGENT__MAX_TOKENS=1000
+UCAN_AGENT__TIMEOUT=30
+
+# Memory Configuration
+UCAN_MEMORY__IMPORTANCE_THRESHOLD=0.5
+UCAN_MEMORY__VECTOR_STORE_TYPE=faiss
+UCAN_MEMORY__EMBEDDING_SIZE=512
+UCAN_MEMORY__CACHE_TTL=3600
+UCAN_MEMORY__MAX_SHORT_TERM_MEMORIES=100
+UCAN_MEMORY__TEXT_CHUNK_SIZE=1000
+UCAN_MEMORY__TEXT_OVERLAP=100
+
+# Interface Configuration
 WINDOW_WIDTH=1200
 WINDOW_HEIGHT=800
 WINDOW_MIN_WIDTH=800
@@ -102,21 +174,28 @@ CHAT_MIN_WIDTH=400
 CHAT_MIN_HEIGHT=300
 SIDEBAR_WIDTH=300
 
-# Configurações de cache
+# Cache Configuration
 CACHE_ENABLED=true
-CACHE_DIR="cache"
+CACHE_DIR=".cache"
 CACHE_MAX_SIZE=1024  # MB
 CACHE_TTL=86400  # 24 horas
 
-# Configurações de log
+# Log Configuration
+UCAN_LOG_LEVEL=INFO
 LOG_DIR="logs"
 LOG_MAX_SIZE=10  # MB
 LOG_BACKUP_COUNT=5
 
-# Configurações de conversas
+# Conversation Configuration
 CONVERSATIONS_DIR="conversations"
 MAX_MESSAGE_LENGTH=4000
 MAX_CONTEXT_LENGTH=8000
+
+# Theme Configuration
+DARK_THEME=true
+CUSTOM_THEME=true
+FONT_SIZE=12
+SAVE_CHAT_HISTORY=true
 """
             )
 
