@@ -1,0 +1,100 @@
+---
+description: Rules for managing component registry in the UCAN project
+globs: "**/*.py"
+alwaysApply: true
+---
+
+When creating new components, utilities, or features that might be reused across the application, follow these rules for component registration:
+
+### Registry File Structure
+The project maintains registry files that document available components:
+
+1. `ucan/core/registry.py` - Core component registry
+2. `ucan/ui/component_registry.py` - UI component registry
+3. `README.md` - High-level component documentation
+
+### Component Documentation
+All major components must be documented in the appropriate registry:
+
+```python
+# Example registry entry in ucan/core/registry.py
+
+"""
+Core component registry for UCAN.
+
+This file documents all major components and utilities in the core module.
+Use this as a reference before creating new components.
+"""
+
+# Message Components
+# -----------------
+# Message - Base class for all message types (conversation.py)
+#   Properties: id, role, content, timestamp
+#   Methods: to_dict(), from_dict()
+#
+# MessageRole - Enum of supported message roles (conversation.py)
+#   Values: USER, ASSISTANT, SYSTEM
+
+# Conversation Management
+# ----------------------
+# Conversation - Manages a conversation with an LLM (conversation.py)
+#   Properties: id, title, messages, created_at, updated_at
+#   Methods: add_message(), clear(), save(), load(), to_dict(), from_dict()
+#
+# ConversationExporter - Handles exporting conversations (utils.py)
+#   Supported formats: JSON, TXT, HTML
+#   Methods: export(), get_supported_formats()
+
+# LLM Interfaces
+# -------------
+# LLMInterface - Abstract base class for LLM providers (llm_interface.py)
+#   Methods: generate_response(), validate_api_key()
+#
+# OpenAIInterface - OpenAI implementation of LLMInterface (llm_interface.py)
+# AnthropicInterface - Anthropic implementation of LLMInterface (llm_interface.py)
+# LocalLLMInterface - Local model implementation of LLMInterface (llm_interface.py)
+```
+
+### Registry Maintenance
+- Update the registry when adding or modifying significant components
+- Include brief descriptions, locations, and key functionality
+- Mark deprecated components clearly
+
+### Component Lookup Process
+When implementing a new feature, follow this process:
+
+1. Check the appropriate registry file for existing components
+2. Review the documentation for similar or related components
+3. Use semantic search on the codebase for more detailed information
+4. Make a clear decision whether to:
+   - Use an existing component as-is
+   - Extend an existing component
+   - Create a new component and add it to the registry
+
+### Registry Template
+When adding a new component to the registry, use this format:
+
+```
+# Component Name - Brief description (file_location.py)
+#   Properties: prop1, prop2, prop3
+#   Methods: method1(), method2(), method3()
+#   Relationships: uses ComponentX, extends ComponentY
+```
+
+### Example Registry Implementation
+For guidance, here's how to implement a registry entry:
+
+```python
+"""
+Registry entry for a new component.
+
+1. Add this documentation to the appropriate registry file
+2. Follow the established format
+3. Include key information about the component
+"""
+
+# NewComponent - Description of what it does (module/file.py)
+#   Properties: [list key properties]
+#   Methods: [list key methods]
+#   Usage: [brief usage example]
+``` 

@@ -1,0 +1,73 @@
+---
+description: Rules for maintaining consistent terminology in the UCAN project
+globs: "**/*.py,**/*.md"
+alwaysApply: true
+---
+
+### Glossário de Termos Técnicos
+
+Para garantir consistência na terminologia usada no código, documentação e interfaces, mantenha e consulte o glossário do projeto:
+
+#### Localização do Glossário:
+- Arquivo principal: `docs/glossary.md`
+- Glossários específicos de domínio: `docs/glossary-[domain].md`
+
+#### Quando adicionar termos:
+- Ao introduzir um novo conceito no domínio do problema
+- Ao criar uma nova abstração ou componente significativo
+- Ao usar termos técnicos específicos que podem ser ambíguos
+- Ao definir nomenclatura para interfaces de usuário
+
+#### Formato de entrada no glossário:
+```markdown
+### Nome do Termo
+
+Definição clara e concisa do termo.
+
+**Contexto de uso**: Descreva onde e como o termo é usado no sistema.
+**Sinônimos**: Termos alternativos que significam a mesma coisa.
+**Termos relacionados**: Conceitos associados mas distintos.
+**Exemplos**: Exemplos de uso em código ou documentação.
+```
+
+#### Termos que devem ser documentados:
+- Conceitos de domínio (ex.: "Conversation", "Message", "LLM")
+- Padrões de design utilizados (ex.: "Factory", "Observer", "Repository")
+- Tipos de componentes de interface (ex.: "MessageBubble", "ChatInput")
+- Termos técnicos específicos do projeto
+
+#### Como usar o glossário:
+1. Antes de nomear uma nova classe, método ou componente, consulte o glossário
+2. Use consistentemente os termos em todo o código e documentação
+3. Referencie o glossário em documentação complexa: `(ver Glossário: Nome do Termo)`
+
+#### Revisão periódica:
+- Revisar o glossário em conjunto com as revisões de código
+- Atualizar quando novos termos forem introduzidos
+- Remover ou marcar como depreciados termos que não são mais usados
+
+Exemplo de glossário:
+
+```markdown
+# Glossário do Projeto UCAN
+
+Este documento define a terminologia usada no projeto UCAN.
+
+### Conversation
+Uma sequência de mensagens trocadas entre um usuário e um modelo de linguagem.
+
+**Contexto de uso**: Módulo central para gerenciamento de conversas.
+**Sinônimos**: Chat, Diálogo
+**Termos relacionados**: Message, LLMInterface
+**Exemplos**: `conversation = Conversation(title="Nova conversa")`
+
+### LLM
+Large Language Model - Modelo de linguagem de grande escala.
+
+**Contexto de uso**: Módulos de interface com APIs de modelos de linguagem.
+**Sinônimos**: Modelo de linguagem
+**Termos relacionados**: LLMInterface, OpenAIInterface, AnthropicInterface
+**Exemplos**: `llm = LLMFactory.create("openai")`
+```
+
+Antes de criar novas abstrações ou componentes, consulte o glossário para verificar se já existe um termo estabelecido ou se um novo termo precisa ser adicionado.

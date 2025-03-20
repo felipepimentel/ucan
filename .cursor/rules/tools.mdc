@@ -1,0 +1,172 @@
+---
+description: Rules for development tools and code quality in the UCAN project
+globs: "**/*"
+alwaysApply: true
+---
+
+When setting up development environments, adding new tools, or establishing processes for code quality, follow these rules:
+
+### Recommended Tools
+The UCAN project encourages the use of these tools to maintain code quality:
+
+#### Code Quality Tools
+- **Pylint**: Static code analysis to find bugs and enforce style
+- **Black**: Automated code formatting
+- **isort**: Import sorting
+- **mypy**: Static type checking
+- **check_duplication.py**: Custom tool to detect code duplication
+
+#### Testing Tools
+- **pytest**: Testing framework
+- **pytest-qt**: Qt-specific testing utilities
+- **pytest-cov**: Code coverage reporting
+
+#### Version Control Tools
+- **Git**: Version control system
+- **Git hooks**: Automated checks on commit/push
+
+### Tool Integration
+
+#### Pre-commit Hooks
+Set up pre-commit hooks to run automated checks before each commit:
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hook scripts
+pre-commit install
+
+# Create a .pre-commit-config.yaml file
+cat > .pre-commit-config.yaml << EOF
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-added-large-files
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+    -   id: isort
+
+-   repo: https://github.com/psf/black
+    rev: 23.3.0
+    hooks:
+    -   id: black
+
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.0.0
+    hooks:
+    -   id: flake8
+        additional_dependencies: [flake8-docstrings]
+
+-   repo: local
+    hooks:
+    -   id: check-duplication
+        name: check code duplication
+        entry: scripts/check_duplication.py
+        language: script
+        types: [python]
+EOF
+```
+
+#### Running Code Quality Tools Manually
+
+Before submitting code for review, run these checks:
+
+```bash
+# Format code
+black ucan
+isort ucan
+
+# Check types
+mypy ucan
+
+# Run linter
+pylint ucan
+
+# Check for duplication
+./scripts/check_duplication.py
+
+# Run tests with coverage
+pytest --cov=ucan
+```
+
+### Continuous Integration
+Set up CI workflows that:
+1. Run all code quality checks
+2. Run the test suite
+3. Generate coverage reports
+4. Check for code duplication
+
+Example GitHub Actions workflow:
+
+```yaml
+name: Code Quality
+
+on: [push, pull_request]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry install
+      
+      - name: Check formatting (Black)
+        run: poetry run black --check ucan
+      
+      - name: Check imports (isort)
+        run: poetry run isort --check ucan
+      
+      - name: Type checking (mypy)
+        run: poetry run mypy ucan
+      
+      - name: Linting (pylint)
+        run: poetry run pylint ucan
+      
+      - name: Check duplication
+        run: poetry run python scripts/check_duplication.py
+      
+      - name: Run tests
+        run: poetry run pytest --cov=ucan
+```
+
+### IDE Integration
+Configure your IDE to use these tools automatically:
+
+#### VSCode Settings
+```json
+{
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.formatting.provider": "black",
+  "editor.formatOnSave": true,
+  "python.linting.mypyEnabled": true,
+  "isort.args": ["--profile", "black"],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true
+  }
+}
+```
+
+### Automation Benefits
+Using these tools provides the following benefits:
+1. **Consistency**: Enforces uniform code style across the codebase
+2. **Early Detection**: Catches issues before they're committed
+3. **Efficiency**: Automates routine tasks like formatting
+4. **Quality**: Improves overall code quality and maintainability
+5. **Duplication Prevention**: Identifies potentially duplicated code 

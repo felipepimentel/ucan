@@ -1,0 +1,110 @@
+---
+description: Rules for managing dependencies in the UCAN project
+globs: "**/*.py,**/pyproject.toml"
+alwaysApply: true
+---
+
+### Gerenciamento de Dependências
+
+Para manter controle sobre as dependências do projeto e garantir que toda a equipe (incluindo a IA) tenha contexto sobre o propósito de cada biblioteca externa, siga estas diretrizes:
+
+#### Documentação de Dependências
+Mantenha um arquivo `docs/dependencies.md` com informações sobre cada dependência:
+
+```markdown
+## Dependências Principais
+
+### PySide6
+**Versão**: ^6.5.0
+**Propósito**: Framework de interface gráfica (GUI) baseado em Qt
+**Alternativas consideradas**: PyQt6, Tkinter, wxPython
+**Razão da escolha**: Licenciamento mais flexível que PyQt, melhor suporte a estilos modernos que Tkinter
+**Usado em**: Todos os componentes de UI em `ucan/ui/`
+**Referência**: ADR-0002
+
+### qasync
+**Versão**: ^0.27.0
+**Propósito**: Integração entre asyncio e Qt event loop
+**Alternativas consideradas**: asyncqt
+**Razão da escolha**: Melhor manutenção e compatibilidade com PySide6
+**Usado em**: `ucan/__main__.py` e componentes assíncronos
+**Referência**: ADR-0004
+```
+
+#### Versionamento Explícito
+- No `pyproject.toml`, use versionamento explícito com comentários
+- Mantenha a árvore de dependências o mais plana possível
+
+```toml
+[tool.poetry.dependencies]
+python = "^3.10"
+pyside6 = "^6.5.0"  # Interface gráfica (ADR-0002)
+qasync = "^0.27.0"  # Integração asyncio+Qt (ADR-0004)
+python-dotenv = "^1.0.0"  # Carregamento de variáveis de ambiente
+requests = "^2.30.0"  # Requisições HTTP para APIs
+```
+
+#### Estratégia de Atualização
+Documente a estratégia de atualização em `docs/dependency_policy.md`:
+
+- Como e quando atualizações são feitas
+- Processo de verificação de compatibilidade
+- Política para dependências de desenvolvimento vs. produção
+
+#### Dependency Lock
+- Use o Poetry para gerenciar o bloqueio de versões (`poetry.lock`)
+- Documente o processo para atualizar este arquivo
+
+#### Camada de Abstração
+Para dependências críticas, crie camadas de abstração:
+
+```python
+# ucan/core/http_client.py
+"""
+Camada de abstração para requisições HTTP.
+
+Este módulo encapsula a biblioteca 'requests' para facilitar:
+1. Testes unitários (via mock)
+2. Possível substituição futura
+3. Comportamentos específicos da aplicação
+"""
+import requests
+
+
+class HttpClient:
+    """Cliente HTTP que encapsula a biblioteca requests."""
+    
+    def get(self, url: str, **kwargs):
+        """Realiza uma requisição GET."""
+        return requests.get(url, **kwargs)
+    
+    # ...
+```
+
+#### Avaliação de Novas Dependências
+Antes de adicionar uma nova dependência, avalie:
+
+1. **Necessidade**: É realmente necessário uma lib externa?
+2. **Maturidade**: A biblioteca é bem mantida e estável?
+3. **Tamanho**: Qual o impacto no tamanho do projeto?
+4. **Licenciamento**: A licença é compatível com o projeto?
+5. **Segurança**: Existem vulnerabilidades conhecidas?
+
+#### Documentação em Código
+Documente o uso de dependências no código:
+
+```python
+# Dependência: PySide6.QtWidgets
+# Propósito: Componentes de UI baseados em Qt
+# Ver: docs/dependencies.md#pyside6
+from PySide6.QtWidgets import QMainWindow, QWidget
+```
+
+#### Revisão Periódica
+Programe revisões periódicas de dependências:
+
+- Verificar por atualizações de segurança
+- Avaliar se dependências antigas ainda são necessárias
+- Considerar consolidação de dependências similares
+
+Estas práticas ajudam a manter o controle do ecossistema de dependências do projeto, garantindo que todos entendam o propósito e o contexto de cada biblioteca utilizada. 

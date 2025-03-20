@@ -1,0 +1,56 @@
+---
+description: Rules for documenting architectural decisions in the UCAN project
+globs: "**/*.py"
+alwaysApply: true
+---
+
+### Architectural Decision Records (ADRs)
+
+Sempre que tomar uma decisão arquitetural significativa durante o desenvolvimento, documente-a seguindo estas orientações:
+
+#### O que documentar:
+- Escolhas de frameworks e bibliotecas
+- Padrões de design adotados
+- Mudanças estruturais importantes
+- Compromissos (trade-offs) técnicos
+- Alternativas consideradas e rejeitadas
+
+#### Localização da documentação:
+- Criar/atualizar arquivos em `docs/adr/`
+- Nomear arquivos como `NNNN-titulo-descritivo.md` onde NNNN é um número sequencial
+
+#### Estrutura do ADR:
+```markdown
+# NNNN. Título descritivo
+
+## Status
+[Proposto | Aceito | Depreciado | Substituído por [NNNN](mdc:NNNN-titulo.md)]
+
+## Contexto
+Descreva o contexto e a problemática que levou a esta decisão.
+
+## Decisão
+Descreva a decisão tomada.
+
+## Consequências
+Descreva as consequências positivas e negativas desta decisão.
+
+## Alternativas Consideradas
+Descreva as alternativas que foram consideradas e por que não foram escolhidas.
+
+## Referências
+Liste todas as referências relevantes.
+```
+
+#### Exemplos de decisões para documentar:
+- Escolha da PySide6 sobre PyQt6 ou outras bibliotecas de UI
+- Padrão de arquitetura para o módulo de LLM
+- Estratégia de armazenamento de conversas
+- Métodos de autenticação e gerenciamento de API keys
+
+#### Como referenciar ADRs:
+- Em comentários de código: `# See ADR-0003 for why we use this approach`
+- Em documentação: `As documented in [ADR-0003](mdc:../adr/0003-titulo.md)...`
+- Em pull requests: `Implements the strategy outlined in ADR-0003`
+
+Antes de implementar uma solução não óbvia ou que possa afetar a arquitetura do projeto, verifique se há ADRs existentes sobre o tema ou considere criar um novo ADR. 

@@ -1,0 +1,109 @@
+---
+description: Rules for maintaining context continuity across development sessions
+globs: "**/*"
+alwaysApply: true
+---
+
+### Gestão de Contexto Entre Sessões
+
+Para garantir que o contexto não seja perdido entre sessões de desenvolvimento, seja com diferentes desenvolvedores ou com assistentes de IA, siga estas diretrizes:
+
+#### Sessões de Desenvolvimento
+
+Para cada sessão de desenvolvimento importante ou que envolva decisões significativas:
+
+1. **Crie um registro da sessão** em `docs/sessions/YYYY-MM-DD-tema.md`
+2. **Documente as decisões chave** tomadas durante a sessão
+3. **Liste as alterações realizadas** em cada arquivo
+4. **Descreva o raciocínio** por trás de escolhas importantes
+5. **Inclua links para issues ou ADRs** relacionados
+
+Exemplo de registro de sessão:
+
+```markdown
+# Sessão de Desenvolvimento: 2023-06-15 - Implementação do Sistema de Exportação
+
+## Contexto
+Implementação do sistema de exportação de conversas conforme descrito no issue #45 e ADR-0007.
+
+## Decisões Tomadas
+1. Criada uma classe `ExporterFactory` para gerenciar diferentes formatos de exportação
+2. Definida uma interface comum `BaseExporter` para todos os exporters
+3. Implementados três formatos iniciais: JSON, TXT e HTML
+4. Adicionado suporte para opções de formatação personalizadas
+
+## Arquivos Modificados
+- `ucan/core/exporters/base.py` - Nova interface `BaseExporter`
+- `ucan/core/exporters/factory.py` - Nova classe `ExporterFactory`
+- `ucan/core/exporters/json_exporter.py`, `txt_exporter.py`, `html_exporter.py` - Implementações
+- `ucan/ui/settings_dialog.py` - Adicionada UI para configurar opções de exportação
+- `ucan/ui/main_window.py` - Adicionados botões e menus para exportação
+
+## Desafios e Soluções
+- **Problema**: Diferentes formatos requerem diferentes opções de configuração
+  **Solução**: Implementada uma classe `ExportOptions` extensível por formato
+  
+- **Problema**: Como lidar com falhas durante exportação
+  **Solução**: Implementado sistema de tratamento de erros com rollback
+
+## Próximos Passos
+1. Adicionar mais formatos de exportação (PDF, Markdown)
+2. Melhorar UX para configuração de exportação
+3. Adicionar testes unitários para cada exportador
+
+## Referências
+- [Issue #45: Sistema de exportação](link-para-issue)
+- [ADR-0007: Arquitetura do sistema de exportação](link-para-adr)
+```
+
+#### Diário de Desenvolvimento
+Mantenha um diário de desenvolvimento em `docs/dev_diary.md` com entradas breves sobre:
+
+1. O que foi feito em cada dia
+2. Desafios enfrentados
+3. Decisões tomadas
+4. Links para sessões de desenvolvimento detalhadas
+
+#### Sessões com Assistentes de IA
+Ao trabalhar com assistentes de IA, registre o contexto:
+
+1. **Inicie cada sessão com um resumo** do que foi feito anteriormente
+2. **Forneça links para documentação relevante** (ADRs, sessões anteriores)
+3. **Ao finalizar, salve um resumo da sessão** se foram tomadas decisões importantes
+
+#### Resumos de Progresso
+A cada marco importante do projeto, crie um resumo de progresso em `docs/progress/YYYY-MM-sprint-N.md`:
+
+1. **Funcionalidades implementadas**
+2. **Decisões de arquitetura**
+3. **Problemas conhecidos**
+4. **Planos futuros**
+
+Estes documentos servem como pontos de referência para entender o estado do projeto em diferentes momentos.
+
+#### Rastreamento de Questões Abertas
+Mantenha um documento `docs/open_questions.md` para registrar questões não resolvidas:
+
+```markdown
+# Questões Abertas
+
+## Performance da Interface de Chat
+- **Contexto**: Observamos lentidão ao carregar conversas com mais de 1000 mensagens
+- **Opções consideradas**:
+  1. Paginação de mensagens
+  2. Virtualização da lista
+  3. Otimização do renderer
+- **Status**: Em investigação (2023-06-20)
+- **Responsável**: @username
+- **Relacionado**: Issue #78
+```
+
+#### Referências Cruzadas
+Use referências cruzadas consistentes em todos os documentos:
+
+- Para ADRs: `ADR-0001`
+- Para issues: `#123`
+- Para sessões: `Session-2023-06-15`
+- Para arquivos: `ucan/core/module.py`
+
+Estas práticas ajudam a garantir que o contexto e a continuidade sejam mantidos entre diferentes sessões de desenvolvimento, independentemente de quem estiver trabalhando no código - humano ou IA. 
