@@ -7,8 +7,8 @@ import logging
 from typing import List, Optional
 
 import markdown
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, Qt, Signal
-from PySide6.QtGui import QKeyEvent, QPixmap, QTextCursor
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QSize, Qt, Signal
+from PySide6.QtGui import QFont, QIcon, QKeyEvent, QPixmap, QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
     QFrame,
@@ -18,8 +18,6 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QScrollArea,
-    QSplitter,
-    QStyle,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -273,7 +271,7 @@ class ChatWidget(QWidget):
         self._last_message_date = None
         self._current_conversation: Optional[Conversation] = None
         self._knowledge_bases: List[KnowledgeBase] = []
-        self._apply_theme(theme_manager.get_current_theme())
+        self._apply_theme()
 
         # Conectar sinais
         self.controller.message_received.connect(self._add_message)
@@ -281,159 +279,206 @@ class ChatWidget(QWidget):
         theme_manager.theme_changed.connect(self._apply_theme)
 
     def _setup_ui(self) -> None:
-        """Configure a interface do widget de chat."""
-        # Layout principal
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
+        """Set up the user interface."""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
-        # Splitter principal
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setHandleWidth(1)
-        splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #32344a;
-            }
-            QSplitter::handle:hover {
-                background-color: #7aa2f7;
-            }
-        """)
-        main_layout.addWidget(splitter)
+        # Header
+        header = QWidget()
+        header.setObjectName("chatHeader")
+        header_layout = QVBoxLayout()
+        header_layout.setContentsMargins(20, 15, 20, 15)
+        header_layout.setSpacing(5)
+        header.setLayout(header_layout)
 
-        # Painel esquerdo - Chat
-        chat_panel = QWidget()
-        chat_layout = QVBoxLayout(chat_panel)
-        chat_layout.setContentsMargins(0, 0, 0, 0)
-        chat_layout.setSpacing(0)
+        # Title with icon
+        title_container = QWidget()
+        title_layout = QHBoxLayout()
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(10)
+        title_container.setLayout(title_layout)
 
-        # Título da conversa
-        self.title_label = QLabel()
+        title_icon = QLabel()
+        title_icon.setPixmap(
+            QPixmap(str(RESOURCES_DIR / "icons" / "chat.svg")).scaled(
+                32, 32, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
+        title_layout.addWidget(title_icon)
+
+        self.title_label = QLabel("Nova Conversa")
         self.title_label.setObjectName("chatTitle")
-        chat_layout.addWidget(self.title_label)
+        title_font = QFont()
+        title_font.setPointSize(18)
+        title_font.setBold(True)
+        self.title_label.setFont(title_font)
+        title_layout.addWidget(self.title_label)
+        title_layout.addStretch()
 
-        # Área de mensagens com scroll suave
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll_area.setObjectName("messageScroll")
+        header_layout.addWidget(title_container)
 
-        # Container de mensagens
-        message_container = QWidget()
-        message_container.setObjectName("messageContainer")
-        self.message_layout = QVBoxLayout(message_container)
-        self.message_layout.setContentsMargins(0, 0, 0, 0)
-        self.message_layout.setSpacing(8)
+        # Subtitle
+        self.subtitle_label = QLabel("Inicie uma nova conversa")
+        self.subtitle_label.setObjectName("chatSubtitle")
+        subtitle_font = QFont()
+        subtitle_font.setPointSize(12)
+        self.subtitle_label.setFont(subtitle_font)
+        header_layout.addWidget(self.subtitle_label)
+
+        layout.addWidget(header)
+
+        # Main content area with splitter
+        content_layout = QHBoxLayout()
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
+
+        # Messages area
+        messages_widget = QWidget()
+        messages_layout = QVBoxLayout(messages_widget)
+        messages_layout.setContentsMargins(0, 0, 0, 0)
+        messages_layout.setSpacing(0)
+
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setObjectName("chatScrollArea")
+
+        self.message_container = QWidget()
+        self.message_container.setObjectName("messageContainer")
+        self.message_layout = QVBoxLayout(self.message_container)
         self.message_layout.addStretch()
 
-        scroll_area.setWidget(message_container)
-        chat_layout.addWidget(scroll_area)
+        self.scroll_area.setWidget(self.message_container)
+        messages_layout.addWidget(self.scroll_area)
 
-        # Área de input
+        # Input area with modern design
         input_container = QWidget()
         input_container.setObjectName("inputContainer")
         input_layout = QVBoxLayout(input_container)
-        input_layout.setContentsMargins(16, 12, 16, 16)
-        input_layout.setSpacing(12)
+        input_layout.setContentsMargins(20, 15, 20, 15)
+        input_layout.setSpacing(10)
 
-        # Barra de formatação
+        # Format bar
         format_bar = QWidget()
         format_bar.setObjectName("formatBar")
         format_layout = QHBoxLayout(format_bar)
         format_layout.setContentsMargins(0, 0, 0, 0)
         format_layout.setSpacing(8)
 
-        # Botões de formatação
-        format_buttons = {
-            "bold": (QStyle.StandardPixmap.SP_DialogYesButton, "Negrito (Ctrl+B)"),
-            "italic": (QStyle.StandardPixmap.SP_DialogNoButton, "Itálico (Ctrl+I)"),
-            "code": (
-                QStyle.StandardPixmap.SP_FileDialogDetailedView,
-                "Código (Ctrl+K)",
-            ),
-            "link": (QStyle.StandardPixmap.SP_DirLinkIcon, "Link (Ctrl+L)"),
-        }
+        # Format buttons
+        format_buttons = [
+            ("bold", "Negrito (Ctrl+B)"),
+            ("italic", "Itálico (Ctrl+I)"),
+            ("code", "Código (Ctrl+K)"),
+            ("link", "Link (Ctrl+L)"),
+        ]
 
         self.format_buttons = {}
-        for format_type, (icon, tooltip) in format_buttons.items():
+        for btn_id, tooltip in format_buttons:
             button = QPushButton()
-            button.setObjectName(f"formatButton_{format_type}")
-            button.setIcon(self.style().standardIcon(icon))
-            button.setFixedSize(32, 32)
-            button.setCursor(Qt.PointingHandCursor)
+            button.setObjectName(f"formatButton_{btn_id}")
+            button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / f"{btn_id}.svg")))
+            button.setIconSize(QSize(16, 16))
             button.setToolTip(tooltip)
             button.setCheckable(True)
             button.clicked.connect(
-                lambda checked, t=format_type: self._handle_format_click(t)
+                lambda checked, b=btn_id: self._handle_format_click(b)
             )
             format_layout.addWidget(button)
-            self.format_buttons[format_type] = button
+            self.format_buttons[btn_id] = button
 
         format_layout.addStretch()
 
-        # Contador de caracteres
-        self.char_counter = QLabel("0/2000")
-        self.char_counter.setObjectName("charCounter")
-        format_layout.addWidget(self.char_counter)
+        # Preview button
+        self.preview_button = QPushButton()
+        self.preview_button.setObjectName("previewButton")
+        self.preview_button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / "preview.svg")))
+        self.preview_button.setIconSize(QSize(16, 16))
+        self.preview_button.setToolTip("Visualizar (Ctrl+P)")
+        self.preview_button.setCheckable(True)
+        self.preview_button.clicked.connect(self._toggle_preview)
+        format_layout.addWidget(self.preview_button)
 
         input_layout.addWidget(format_bar)
 
-        # Área de texto
-        input_widget = QWidget()
-        input_widget.setObjectName("inputWidget")
-        text_layout = QHBoxLayout(input_widget)
-        text_layout.setContentsMargins(0, 0, 0, 0)
-        text_layout.setSpacing(12)
+        # Message input with send button
+        input_row = QWidget()
+        input_row_layout = QHBoxLayout(input_row)
+        input_row_layout.setContentsMargins(0, 0, 0, 0)
+        input_row_layout.setSpacing(10)
 
         self.input_text = QTextEdit()
-        self.input_text.setObjectName("inputText")
-        self.input_text.setPlaceholderText(
-            "Digite sua mensagem aqui... (Ctrl+Enter para enviar)"
-        )
-        self.input_text.setMinimumHeight(60)
-        self.input_text.setMaximumHeight(200)
-        text_layout.addWidget(self.input_text)
+        self.input_text.setPlaceholderText("Digite sua mensagem...")
+        self.input_text.setMinimumHeight(50)
+        self.input_text.setMaximumHeight(100)
+        self.input_text.setObjectName("messageInput")
+        input_row_layout.addWidget(self.input_text)
 
-        # Botão de enviar
+        # Character counter
+        self.char_counter = QLabel("0/2000")
+        self.char_counter.setObjectName("charCounter")
+        input_row_layout.addWidget(self.char_counter)
+
+        # Send button
         self.send_button = QPushButton()
         self.send_button.setObjectName("sendButton")
-        self.send_button.setIcon(self.style().standardIcon(QStyle.SP_ArrowRight))
+        self.send_button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / "send.svg")))
+        self.send_button.setIconSize(QSize(20, 20))
         self.send_button.setFixedSize(40, 40)
-        self.send_button.setCursor(Qt.PointingHandCursor)
-        self.send_button.setEnabled(False)
-        text_layout.addWidget(self.send_button)
+        self.send_button.setToolTip("Enviar mensagem (Ctrl+Enter)")
+        self.send_button.clicked.connect(self._send_message)
+        input_row_layout.addWidget(self.send_button)
 
-        input_layout.addWidget(input_widget)
-        chat_layout.addWidget(input_container)
+        input_layout.addWidget(input_row)
 
-        # Adiciona o painel de chat ao splitter
-        splitter.addWidget(chat_panel)
+        messages_layout.addWidget(input_container)
+        content_layout.addWidget(messages_widget, stretch=7)
 
-        # Painel direito - Bases de conhecimento
+        # Knowledge base panel
         knowledge_panel = QWidget()
         knowledge_panel.setObjectName("knowledgePanel")
         knowledge_layout = QVBoxLayout(knowledge_panel)
-        knowledge_layout.setContentsMargins(16, 16, 16, 16)
-        knowledge_layout.setSpacing(12)
+        knowledge_layout.setContentsMargins(15, 15, 15, 15)
+        knowledge_layout.setSpacing(10)
 
-        knowledge_title = QLabel("Bases de Conhecimento")
-        knowledge_title.setObjectName("knowledgeTitle")
-        knowledge_layout.addWidget(knowledge_title)
+        # Knowledge base header
+        kb_header = QWidget()
+        kb_header_layout = QHBoxLayout(kb_header)
+        kb_header_layout.setContentsMargins(0, 0, 0, 0)
+        kb_header_layout.setSpacing(10)
+
+        kb_icon = QLabel()
+        kb_icon.setPixmap(
+            QPixmap(str(RESOURCES_DIR / "icons" / "book.svg")).scaled(
+                24, 24, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
+        kb_header_layout.addWidget(kb_icon)
+
+        kb_title = QLabel("Bases de Conhecimento")
+        kb_title.setObjectName("knowledgeTitle")
+        kb_title_font = QFont()
+        kb_title_font.setPointSize(14)
+        kb_title_font.setBold(True)
+        kb_title.setFont(kb_title_font)
+        kb_header_layout.addWidget(kb_title)
+        kb_header_layout.addStretch()
+
+        knowledge_layout.addWidget(kb_header)
 
         self.knowledge_list = QListWidget()
         self.knowledge_list.setObjectName("knowledgeList")
         knowledge_layout.addWidget(self.knowledge_list)
 
-        # Adiciona o painel de conhecimento ao splitter
-        splitter.addWidget(knowledge_panel)
+        content_layout.addWidget(knowledge_panel, stretch=3)
 
-        # Ajusta o tamanho inicial do splitter (70% chat, 30% conhecimento)
-        splitter.setSizes([700, 300])
+        layout.addLayout(content_layout)
 
     def _setup_signals(self):
-        """Configura os sinais do widget."""
+        """Set up signal connections."""
         self.input_text.textChanged.connect(self._on_text_changed)
-        self.send_button.clicked.connect(self._send_message)
+        theme_manager.theme_changed.connect(self._apply_theme)
 
     def _on_text_changed(self):
         """Manipula mudanças no texto de entrada."""
@@ -730,6 +775,14 @@ class ChatWidget(QWidget):
             self._knowledge_bases = []
         self._update_knowledge_list()
 
-    def _apply_theme(self, theme):
-        """Apply the current theme."""
-        self.setStyleSheet(theme.get_stylesheet())
+    def _apply_theme(self):
+        """
+        Atualiza os estilos deste widget quando o tema muda ou
+        há um hot reload de CSS.
+        """
+        theme = theme_manager.current_theme
+        if theme:
+            self.setStyleSheet(theme.generate_stylesheet())
+
+            # Atualiza também os componentes filhos importantes
+            self.input_text.setStyleSheet(theme.generate_stylesheet())

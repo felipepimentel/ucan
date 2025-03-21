@@ -2,6 +2,7 @@
 """Script de linha de comando para o aplicativo UCAN."""
 
 import argparse
+import asyncio
 import sys
 
 from ucan.config.constants import APP_NAME, APP_VERSION
@@ -28,8 +29,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def main():
-    """Função principal do CLI."""
+async def async_main():
+    """Função principal assíncrona do CLI."""
     args = parse_args()
 
     # Configura o nível de log
@@ -43,7 +44,20 @@ def main():
 
     # Roda a aplicação
     try:
-        return app_main()
+        await app_main()
+        return 0
+    except KeyboardInterrupt:
+        logger.info("Aplicação encerrada pelo usuário")
+        return 0
+    except Exception as e:
+        logger.critical(f"Erro fatal: {e}")
+        return 1
+
+
+def main():
+    """Função principal do CLI."""
+    try:
+        return asyncio.run(async_main())
     except KeyboardInterrupt:
         logger.info("Aplicação encerrada pelo usuário")
         return 0

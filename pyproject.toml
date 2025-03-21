@@ -9,7 +9,6 @@ packages = [{ include = "ucan" }]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.12"
-PySide6 = "^6.5.0"
 qasync = "^0.27.0"
 openai = "^1.1.1"
 anthropic = "^0.5.0"
@@ -19,6 +18,7 @@ requests = "^2.30.0"
 watchdog = "^6.0.0"
 markdown = "^3.5.0"
 duckdb = "^0.10.0"
+pyside6 = "^6.8.2.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.2.0"

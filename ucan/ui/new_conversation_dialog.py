@@ -25,7 +25,7 @@ class NewConversationDialog(QDialog):
         self.setMinimumSize(400, 300)
         self._setup_ui()
         self._setup_signals()
-        self._apply_theme(theme_manager.get_current_theme())
+        self._apply_theme(theme_manager.current_theme)
 
     def _setup_ui(self):
         """Setup the UI components."""

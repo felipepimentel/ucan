@@ -288,7 +288,7 @@ class AppController(QObject):
         try:
             conversation = Conversation.import_from_file(file_path)
             self.get_conversations()
-                return conversation.id
+            return conversation.id
         except Exception as e:
             logger.error("Erro ao importar conversa: %s", e)
             return None

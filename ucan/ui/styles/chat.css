@@ -1,5 +1,19 @@
 /* Estilos para o widget de chat */
 
+/* Header do chat */
+#chatHeader {
+    background-color: #1f2335;
+    border-bottom: 1px solid #32344a;
+}
+
+#chatTitle {
+    color: #c0caf5;
+}
+
+#chatSubtitle {
+    color: #565f89;
+}
+
 /* Container principal */
 #chatWidget {
     background-color: #1a1b26;
@@ -54,9 +68,7 @@
     padding: 16px 20px;
     border-radius: 16px;
     margin: 12px 0;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background-color: rgba(0, 0, 0, 0.15);
 }
 
 /* Mensagens */
@@ -81,9 +93,7 @@
 }
 
 #messageContainer:hover {
-    -webkit-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    transform: translateY(-1px);
+    background-color: rgba(0, 0, 0, 0.2);
 }
 
 /* Cabeçalho da mensagem */
@@ -97,7 +107,6 @@
     background-color: rgba(122, 162, 247, 0.08);
     border-radius: 8px;
     padding: 6px 12px;
-    transition: all 0.2s ease-in-out;
 }
 
 #message_user #roleContainer {
@@ -116,7 +125,6 @@
     min-width: 24px;
     min-height: 24px;
     opacity: 0.9;
-    transition: opacity 0.2s ease-in-out;
 }
 
 #roleIcon:hover {
@@ -126,7 +134,6 @@
 #roleName {
     font-weight: 600;
     font-size: 14px;
-    transition: color 0.2s ease-in-out;
 }
 
 #message_assistant #roleName {
@@ -140,7 +147,6 @@
 #timestampLabel {
     color: #565f89;
     font-size: 12px;
-    transition: color 0.2s ease-in-out;
 }
 
 #timestampLabel:hover {
@@ -151,7 +157,6 @@
     min-width: 16px;
     min-height: 16px;
     opacity: 0.7;
-    transition: opacity 0.2s ease-in-out;
 }
 
 #statusIcon:hover {
@@ -169,13 +174,10 @@
 #messageContent a {
     color: #7aa2f7;
     text-decoration: none;
-    border-bottom: 1px solid transparent;
-    transition: all 0.2s ease-in-out;
 }
 
 #messageContent a:hover {
     color: #89b4fa;
-    border-bottom-color: #89b4fa;
 }
 
 #messageContent code {
@@ -185,7 +187,6 @@
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
     border: 1px solid rgba(50, 52, 74, 0.5);
-    transition: all 0.2s ease-in-out;
 }
 
 #messageContent code:hover {
@@ -200,7 +201,6 @@
     border: 1px solid rgba(50, 52, 74, 0.5);
     margin: 12px 0;
     overflow-x: auto;
-    transition: all 0.2s ease-in-out;
 }
 
 #messageContent pre:hover {
@@ -222,7 +222,6 @@
     color: #9aa5ce;
     background-color: rgba(65, 72, 104, 0.1);
     border-radius: 0 8px 8px 0;
-    transition: all 0.2s ease-in-out;
 }
 
 #messageContent blockquote:hover {
@@ -246,53 +245,44 @@
     font-size: 13px;
     font-weight: 500;
     padding: 0 20px;
-    transition: color 0.2s ease-in-out;
 }
 
-#separatorText:hover {
-    color: #9aa5ce;
-}
-
-/* Container de input */
+/* Input container */
 #inputContainer {
     background-color: #24283b;
     border-top: 1px solid #32344a;
     padding: 20px;
+    margin: 0;
 }
 
 /* Barra de formatação */
 #formatBar {
-    background-color: transparent;
-    padding: 8px 0;
-    margin-bottom: 8px;
+    background-color: rgba(26, 27, 38, 0.7);
+    border-radius: 8px;
+    padding: 8px;
 }
 
 /* Botões de formatação */
-[id^="formatButton_"] {
-    background-color: rgba(122, 162, 247, 0.08);
-    border: 1px solid transparent;
-    border-radius: 8px;
-    padding: 8px;
-    min-width: 36px;
-    min-height: 36px;
-    transition: all 0.2s ease-in-out;
+[id^="formatButton_"], #previewButton {
+    background-color: transparent;
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
 }
 
-[id^="formatButton_"]:hover {
+[id^="formatButton_"]:hover, #previewButton:hover {
+    background-color: rgba(122, 162, 247, 0.1);
+}
+
+[id^="formatButton_"]:pressed, #previewButton:pressed {
+    background-color: rgba(122, 162, 247, 0.2);
+}
+
+[id^="formatButton_"]:checked, #previewButton:checked {
     background-color: rgba(122, 162, 247, 0.15);
-    border-color: rgba(122, 162, 247, 0.3);
-    transform: translateY(-1px);
-}
-
-[id^="formatButton_"]:pressed {
-    background-color: rgba(122, 162, 247, 0.25);
-    border-color: #7aa2f7;
-    transform: translateY(1px);
-}
-
-[id^="formatButton_"]:checked {
-    background-color: rgba(122, 162, 247, 0.3);
-    border-color: #7aa2f7;
+    border: 1px solid rgba(122, 162, 247, 0.3);
 }
 
 /* Campo de texto */
@@ -304,7 +294,7 @@
     font-size: 15px;
     line-height: 1.6;
     color: #c0caf5;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-right: 8px;
 }
 
 #inputText:hover {
@@ -316,8 +306,6 @@
     outline: none;
     border-color: #7aa2f7;
     background-color: #1a1b26;
-    -webkit-box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.15);
-    box-shadow: 0 0 0 3px rgba(122, 162, 247, 0.15);
 }
 
 #inputText::placeholder {
@@ -334,31 +322,21 @@
     padding: 12px 24px;
     font-size: 15px;
     font-weight: 600;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    -webkit-box-shadow: 0 4px 12px rgba(122, 162, 247, 0.2);
-    box-shadow: 0 4px 12px rgba(122, 162, 247, 0.2);
+    min-width: 100px;
+    margin: 0 8px;
 }
 
 #sendButton:hover:not(:disabled) {
     background-color: #89b4fa;
-    transform: translateY(-2px);
-    -webkit-box-shadow: 0 6px 16px rgba(122, 162, 247, 0.25);
-    box-shadow: 0 6px 16px rgba(122, 162, 247, 0.25);
 }
 
 #sendButton:pressed:not(:disabled) {
-    transform: translateY(1px);
-    -webkit-box-shadow: 0 2px 8px rgba(122, 162, 247, 0.15);
-    box-shadow: 0 2px 8px rgba(122, 162, 247, 0.15);
+    background-color: #7aa2f7;
 }
 
 #sendButton:disabled {
     background-color: #4c4f69;
-    cursor: not-allowed;
     opacity: 0.7;
-    -webkit-box-shadow: none;
-    box-shadow: none;
 }
 
 /* Contador de caracteres */
@@ -367,18 +345,10 @@
     font-size: 13px;
     font-weight: 500;
     padding: 0 16px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #charCounter[warning="true"] {
     color: #f7768e;
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
 }
 
 /* Painel de conhecimento */
@@ -406,13 +376,11 @@
     border-radius: 12px;
     margin-bottom: 12px;
     padding: 16px;
-    transition: all 0.2s ease-in-out;
 }
 
 #knowledgeList::item:hover {
     background-color: #2a2e44;
     border-color: #414868;
-    transform: translateX(4px);
 }
 
 #knowledgeBaseName {
@@ -424,7 +392,6 @@
 #knowledgeBaseScope {
     color: #565f89;
     font-size: 13px;
-    transition: color 0.2s ease-in-out;
 }
 
 #knowledgeBaseScope:hover {

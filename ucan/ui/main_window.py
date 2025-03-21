@@ -5,10 +5,12 @@ Janela principal da aplicação UCAN.
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import QAction, QFont, QIcon
 from PySide6.QtWidgets import (
     QDockWidget,
     QFileDialog,
+    QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMenuBar,
     QMessageBox,
@@ -47,15 +49,21 @@ class MainWindow(QMainWindow):
         self._setup_ui()
         self._setup_menu()
         self._setup_signals()
-        self._apply_theme(theme_manager.get_current_theme())
+        self._apply_theme()
 
     def _setup_ui(self):
         """Configura a interface do usuário."""
         self.setWindowTitle("UCAN")
-        self.setMinimumSize(QSize(1000, 700))
+        self.setMinimumSize(QSize(1200, 800))
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #121212;
+            }
+        """)
 
         # Widget central
         central_widget = QWidget()
+        central_widget.setObjectName("centralWidget")
         self.setCentralWidget(central_widget)
 
         # Layout principal
@@ -64,47 +72,83 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
         central_widget.setLayout(main_layout)
 
+        # Header com título e subtítulo
+        header = QWidget()
+        header.setObjectName("header")
+        header_layout = QVBoxLayout()
+        header_layout.setContentsMargins(20, 15, 20, 15)
+        header_layout.setSpacing(5)
+        header.setLayout(header_layout)
+
+        title = QLabel("UCAN")
+        title.setObjectName("appTitle")
+        title_font = QFont()
+        title_font.setPointSize(24)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        header_layout.addWidget(title)
+
+        subtitle = QLabel("Seu assistente de programação")
+        subtitle.setObjectName("appSubtitle")
+        subtitle_font = QFont()
+        subtitle_font.setPointSize(12)
+        subtitle.setFont(subtitle_font)
+        header_layout.addWidget(subtitle)
+
+        main_layout.addWidget(header)
+
         # Barra de ferramentas moderna
-        toolbar = QToolBar()
+        toolbar = QToolBar("Principal")
         toolbar.setMovable(False)
         toolbar.setIconSize(QSize(24, 24))
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-        toolbar.setStyleSheet("""
-            QToolBar {
-                spacing: 8px;
-                padding: 4px 8px;
-                background-color: #24283b;
-                border-bottom: 1px solid #32344a;
-            }
-            QToolButton {
-                padding: 6px 12px;
-                border-radius: 6px;
-                color: #c0caf5;
-            }
-            QToolButton:hover {
-                background-color: #414868;
-            }
-            QToolButton:pressed {
-                background-color: #565f89;
-            }
-        """)
+        toolbar.setObjectName("mainToolbar")
         self.addToolBar(toolbar)
 
         # Ações da barra de ferramentas com ícones modernos
         new_conversation_action = QAction(
-            QIcon.fromTheme("document-new"), "Nova Conversa", self
+            QIcon(
+                str(
+                    Path(__file__).parent.parent
+                    / "resources"
+                    / "icons"
+                    / "chat-plus.svg"
+                )
+            ),
+            "Nova Conversa",
+            self,
         )
         new_conversation_action.triggered.connect(self._show_new_conversation_dialog)
         new_conversation_action.setStatusTip("Criar uma nova conversa")
         toolbar.addAction(new_conversation_action)
 
-        new_type_action = QAction(QIcon.fromTheme("folder-new"), "Novo Tipo", self)
+        new_type_action = QAction(
+            QIcon(
+                str(
+                    Path(__file__).parent.parent
+                    / "resources"
+                    / "icons"
+                    / "folder-plus.svg"
+                )
+            ),
+            "Novo Tipo",
+            self,
+        )
         new_type_action.triggered.connect(self._show_conversation_type_dialog)
         new_type_action.setStatusTip("Criar um novo tipo de conversa")
         toolbar.addAction(new_type_action)
 
         new_knowledge_base_action = QAction(
-            QIcon.fromTheme("document-properties"), "Nova Base", self
+            QIcon(
+                str(
+                    Path(__file__).parent.parent
+                    / "resources"
+                    / "icons"
+                    / "book-open.svg"
+                )
+            ),
+            "Nova Base",
+            self,
         )
         new_knowledge_base_action.triggered.connect(self._show_knowledge_base_dialog)
         new_knowledge_base_action.setStatusTip("Criar uma nova base de conhecimento")
@@ -113,40 +157,55 @@ class MainWindow(QMainWindow):
         # Splitter principal com proporções melhores
         splitter = QSplitter(Qt.Horizontal)
         splitter.setHandleWidth(1)
-        splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #32344a;
-            }
-            QSplitter::handle:hover {
-                background-color: #7aa2f7;
-            }
-        """)
+        splitter.setObjectName("mainSplitter")
         main_layout.addWidget(splitter)
+
+        # Container da lista de conversas
+        conversation_container = QWidget()
+        conversation_container.setObjectName("conversationContainer")
+        conversation_layout = QVBoxLayout()
+        conversation_layout.setContentsMargins(0, 0, 0, 0)
+        conversation_layout.setSpacing(0)
+        conversation_container.setLayout(conversation_layout)
+
+        # Título da lista de conversas
+        conversation_header = QWidget()
+        conversation_header.setObjectName("conversationHeader")
+        conversation_header_layout = QHBoxLayout()
+        conversation_header_layout.setContentsMargins(15, 15, 15, 15)
+        conversation_header.setLayout(conversation_header_layout)
+
+        conversation_title = QLabel("Conversas")
+        conversation_title.setObjectName("sectionTitle")
+        title_font = QFont()
+        title_font.setPointSize(14)
+        title_font.setBold(True)
+        conversation_title.setFont(title_font)
+        conversation_header_layout.addWidget(conversation_title)
+
+        conversation_layout.addWidget(conversation_header)
 
         # Lista de conversas com estilo moderno
         self.conversation_list = ConversationListWidget()
+        self.conversation_list.setObjectName("conversationListWidget")
         self.conversation_list.setMinimumWidth(280)
-        self.conversation_list.setMaximumWidth(380)
-        splitter.addWidget(self.conversation_list)
+        self.conversation_list.setMaximumWidth(350)
+        conversation_layout.addWidget(self.conversation_list)
+
+        splitter.addWidget(conversation_container)
 
         # Widget de chat
         self.chat_widget = ChatWidget(self.controller)
+        self.chat_widget.setObjectName("chatWidget")
         splitter.addWidget(self.chat_widget)
 
         # Ajusta o tamanho inicial do splitter (25% lista, 75% chat)
-        splitter.setSizes([250, 750])
+        splitter.setSizes([250, 950])
 
         # Barra de status moderna
         self.status_bar = QStatusBar()
+        self.status_bar.setObjectName("statusBar")
         self.setStatusBar(self.status_bar)
-        self.status_bar.setStyleSheet("""
-            QStatusBar {
-                background-color: #24283b;
-                color: #a9b1d6;
-                border-top: 1px solid #32344a;
-                padding: 4px 8px;
-            }
-        """)
         self.status_bar.showMessage("Pronto")
 
     def _setup_menu(self):
@@ -225,7 +284,9 @@ class MainWindow(QMainWindow):
             self.controller.get_conversation_types()
         )
 
+        # Conexões de tema e hot reload
         theme_manager.theme_changed.connect(self._apply_theme)
+        theme_manager.css_file_changed.connect(self._on_css_file_changed)
 
     def _show_new_conversation_dialog(self):
         """Exibe o diálogo de nova conversa."""
@@ -343,6 +404,23 @@ class MainWindow(QMainWindow):
             "© 2024 UCAN Team",
         )
 
-    def _apply_theme(self, theme):
-        """Apply the current theme."""
-        self.setStyleSheet(theme.get_stylesheet())
+    def _apply_theme(self):
+        """Apply the current theme to the window."""
+        theme = theme_manager.current_theme
+        if theme:
+            self.setStyleSheet(theme.generate_stylesheet())
+
+    def _on_css_file_changed(self):
+        """
+        Chamado quando um arquivo CSS é alterado.
+        Atualiza toda a UI imediatamente.
+        """
+        print("Applying hot reload changes to the entire UI")
+        self._apply_theme()
+
+        # Atualiza também widgets filhos importantes
+        self.chat_widget._apply_theme()
+        self.conversation_list._apply_theme()
+
+        # Atualiza a barra de status com mensagem informativa
+        self.status_bar.showMessage("Hot reload: CSS atualizado", 3000)

@@ -9,9 +9,10 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QPushButton,
+    QMenu,
     QVBoxLayout,
     QWidget,
 )
@@ -41,28 +42,47 @@ class ConversationListWidget(QWidget):
     def _setup_ui(self):
         """Configura a interface do usuário."""
         layout = QVBoxLayout()
+        layout.setContentsMargins(15, 20, 15, 20)
+        layout.setSpacing(15)
         self.setLayout(layout)
 
-        # Título
-        layout.addWidget(QLabel("Conversas"))
+        # Título da seção
+        header = QLabel("Conversas")
+        header.setObjectName("conversationsHeader")
+        header.setAlignment(Qt.AlignLeft)
+        layout.addWidget(header)
 
         # Seletor de tipo
         type_layout = QHBoxLayout()
-        type_layout.addWidget(QLabel("Tipo:"))
+        type_layout.setContentsMargins(0, 0, 0, 0)
+        type_layout.setSpacing(10)
+
+        type_label = QLabel("Tipo:")
+        type_label.setObjectName("typeLabel")
+        type_layout.addWidget(type_label)
+
         self.type_combo = QComboBox()
+        self.type_combo.setObjectName("typeComboBox")
         self.type_combo.currentIndexChanged.connect(self._on_type_changed)
-        type_layout.addWidget(self.type_combo)
+        type_layout.addWidget(self.type_combo, 1)
+
         layout.addLayout(type_layout)
+
+        # Caixa de pesquisa
+        self.search_box = QLineEdit()
+        self.search_box.setObjectName("searchBox")
+        self.search_box.setPlaceholderText("Buscar conversas...")
+        self.search_box.setClearButtonEnabled(True)
+        layout.addWidget(self.search_box)
 
         # Lista de conversas
         self.conversation_list = QListWidget()
+        self.conversation_list.setObjectName("conversationsList")
+        self.conversation_list.setFrameShape(QListWidget.NoFrame)
         self.conversation_list.itemClicked.connect(self._on_conversation_selected)
-        layout.addWidget(self.conversation_list)
-
-        # Botão de nova conversa
-        new_button = QPushButton("Nova Conversa")
-        new_button.clicked.connect(self._on_new_conversation)
-        layout.addWidget(new_button)
+        self.conversation_list.setAlternatingRowColors(True)
+        self.conversation_list.setSelectionMode(QListWidget.SingleSelection)
+        layout.addWidget(self.conversation_list, 1)
 
     def set_conversations(self, conversations: List[Conversation]):
         """
@@ -146,3 +166,32 @@ class ConversationListWidget(QWidget):
             index: Índice do tipo selecionado
         """
         self._update_conversation_list()
+
+    def contextMenuEvent(self, event):
+        """
+        Manipula o evento de menu de contexto.
+
+        Args:
+            event: O evento de menu de contexto.
+        """
+        index = self.conversation_list.indexAt(event.pos())
+        if index.isValid():
+            conversation_id = index.data(Qt.UserRole)
+            menu = QMenu(self)
+            menu.addAction("Apagar", lambda: self._delete_conversation(conversation_id))
+            menu.exec(event.globalPos())
+
+    def _apply_theme(self):
+        """
+        Atualiza os estilos deste widget quando o tema muda ou
+        há um hot reload de CSS.
+        """
+        from ucan.ui.theme_manager import theme_manager
+
+        theme = theme_manager.current_theme
+        if theme:
+            self.setStyleSheet(theme.generate_stylesheet())
+
+            # Atualiza também os componentes filhos importantes
+            self.conversation_list.setStyleSheet(theme.generate_stylesheet())
+            self.search_box.setStyleSheet(theme.generate_stylesheet())
