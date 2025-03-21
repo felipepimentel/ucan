@@ -1,39 +1,34 @@
 /* Estilos para o widget de chat */
 
-/* Header do chat */
+/* Área principal do chat */
+#chatWidget {
+    background-color: #1A1D26;
+}
+
+/* Header do chat mais compacto */
 #chatHeader {
-    background-color: #1f2335;
-    border-bottom: 1px solid #32344a;
+    background-color: #20232D;
+    border-bottom: 1px solid #2F3241;
+    padding: 10px 16px;
 }
 
 #chatTitle {
-    color: #c0caf5;
+    font-size: 16px;
+    font-weight: 600;
+    color: #E4E6EB;
 }
 
 #chatSubtitle {
-    color: #565f89;
+    font-size: 13px;
+    color: #9096A2;
+    margin-top: 2px;
 }
 
-/* Container principal */
-#chatWidget {
-    background-color: #1a1b26;
-}
-
-/* Título do chat */
-#chatTitle {
-    font-size: 22px;
-    font-weight: 600;
-    padding: 24px 28px;
-    background-color: #24283b;
-    color: #c0caf5;
-    border-bottom: 1px solid #32344a;
-}
-
-/* Área de mensagens */
+/* Área de mensagens com melhor visualização */
 #messageScroll {
-    background-color: #1a1b26;
+    background-color: #1A1D26;
     border: none;
-    padding: 12px 0;
+    padding: 12px;
 }
 
 #messageScroll QScrollBar:vertical {
@@ -63,27 +58,29 @@
     background: none;
 }
 
-/* Container de mensagens */
+/* Container de mensagens mais eficiente */
 #messageContainer {
-    padding: 16px 20px;
-    border-radius: 16px;
-    margin: 12px 0;
-    background-color: rgba(0, 0, 0, 0.15);
+    padding: 12px 16px;
+    margin: 6px 0;
+    background-color: transparent;
+    border-radius: 4px;
 }
 
-/* Mensagens */
-#message_user #messageContainer {
-    background-color: #2c2e3b;
-    margin-left: 64px;
-    margin-right: 24px;
-    border: 1px solid rgba(122, 162, 247, 0.1);
+/* Mensagens mais compactas e legíveis */
+#message_user {
+    background-color: rgba(123, 104, 238, 0.1);
+    border-left: 3px solid #7B68EE;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 6px 48px 6px 8px;
 }
 
-#message_assistant #messageContainer {
-    background-color: #1f2937;
-    margin-right: 64px;
-    margin-left: 24px;
-    border: 1px solid rgba(247, 118, 142, 0.1);
+#message_assistant {
+    background-color: #20232D;
+    border-left: 3px solid #2F3241;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 16px;
+    margin: 6px 8px 6px 48px;
 }
 
 #message_system #messageContainer {
@@ -98,59 +95,27 @@
 
 /* Cabeçalho da mensagem */
 #messageHeader {
-    border-bottom: 1px solid rgba(50, 52, 74, 0.5);
-    padding-bottom: 12px;
-    margin-bottom: 12px;
-}
-
-#roleContainer {
-    background-color: rgba(122, 162, 247, 0.08);
-    border-radius: 8px;
-    padding: 6px 12px;
-}
-
-#message_user #roleContainer {
-    background-color: rgba(247, 118, 142, 0.08);
-}
-
-#roleContainer:hover {
-    background-color: rgba(122, 162, 247, 0.15);
-}
-
-#message_user #roleContainer:hover {
-    background-color: rgba(247, 118, 142, 0.15);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
 }
 
 #roleIcon {
-    min-width: 24px;
-    min-height: 24px;
-    opacity: 0.9;
-}
-
-#roleIcon:hover {
-    opacity: 1;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
 }
 
 #roleName {
     font-weight: 600;
     font-size: 14px;
-}
-
-#message_assistant #roleName {
-    color: #7aa2f7;
-}
-
-#message_user #roleName {
-    color: #f7768e;
+    color: #E4E6EB;
 }
 
 #timestampLabel {
-    color: #565f89;
     font-size: 12px;
-}
-
-#timestampLabel:hover {
-    color: #9aa5ce;
+    color: #9096A2;
+    margin-left: 8px;
 }
 
 #statusIcon {
@@ -165,10 +130,9 @@
 
 /* Conteúdo da mensagem */
 #messageContent {
-    color: #c0caf5;
-    font-size: 15px;
+    font-size: 14px;
     line-height: 1.6;
-    padding: 0 4px;
+    color: #E4E6EB;
 }
 
 #messageContent a {
@@ -181,12 +145,12 @@
 }
 
 #messageContent code {
-    background-color: rgba(26, 27, 38, 0.5);
-    padding: 3px 8px;
-    border-radius: 6px;
+    background-color: #272B36;
+    border: 1px solid #2F3241;
+    border-radius: 4px;
+    padding: 2px 6px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    border: 1px solid rgba(50, 52, 74, 0.5);
+    font-size: 13px;
 }
 
 #messageContent code:hover {
@@ -195,11 +159,11 @@
 }
 
 #messageContent pre {
-    background-color: rgba(26, 27, 38, 0.5);
-    padding: 16px 20px;
-    border-radius: 12px;
-    border: 1px solid rgba(50, 52, 74, 0.5);
-    margin: 12px 0;
+    background-color: #272B36;
+    border: 1px solid #2F3241;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
     overflow-x: auto;
 }
 
@@ -210,9 +174,8 @@
 
 #messageContent pre code {
     background-color: transparent;
-    padding: 0;
     border: none;
-    border-radius: 0;
+    padding: 0;
 }
 
 #messageContent blockquote {
@@ -247,160 +210,203 @@
     padding: 0 20px;
 }
 
-/* Input container */
-#inputContainer {
-    background-color: #24283b;
-    border-top: 1px solid #32344a;
-    padding: 20px;
-    margin: 0;
-}
-
-/* Barra de formatação */
+/* Barra de formatação ainda mais compacta */
 #formatBar {
-    background-color: rgba(26, 27, 38, 0.7);
-    border-radius: 8px;
-    padding: 8px;
+    background-color: #272B36;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin-bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
 }
 
-/* Botões de formatação */
-[id^="formatButton_"], #previewButton {
+#formatBar QPushButton {
     background-color: transparent;
     border: none;
-    border-radius: 4px;
-    padding: 6px;
-    min-width: 32px;
-    min-height: 32px;
+    border-radius: 3px;
+    padding: 3px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 22px;
+    max-height: 22px;
+    margin: 0 1px;
+    icon-size: 14px;
 }
 
-[id^="formatButton_"]:hover, #previewButton:hover {
-    background-color: rgba(122, 162, 247, 0.1);
+#formatBar QPushButton:hover {
+    background-color: rgba(123, 104, 238, 0.15);
 }
 
-[id^="formatButton_"]:pressed, #previewButton:pressed {
-    background-color: rgba(122, 162, 247, 0.2);
+#formatBar QPushButton:checked {
+    background-color: rgba(123, 104, 238, 0.2);
+    border: 1px solid rgba(123, 104, 238, 0.3);
 }
 
-[id^="formatButton_"]:checked, #previewButton:checked {
-    background-color: rgba(122, 162, 247, 0.15);
-    border: 1px solid rgba(122, 162, 247, 0.3);
-}
-
-/* Campo de texto */
+/* Área de entrada mais eficiente */
 #inputText {
-    background-color: #1f2335;
-    border: 1px solid #32344a;
-    border-radius: 14px;
-    padding: 18px;
-    font-size: 15px;
-    line-height: 1.6;
-    color: #c0caf5;
-    margin-right: 8px;
+    background-color: #272B36;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #E4E6EB;
+    margin-right: 6px;
+    min-height: 22px;
+    max-height: 100px;
 }
 
 #inputText:hover {
-    border-color: #414868;
-    background-color: #1a1b26;
+    border-color: rgba(123, 104, 238, 0.3);
+    background-color: #2C3241;
 }
 
 #inputText:focus {
+    border-color: #7B68EE;
+    background-color: #2C3241;
     outline: none;
-    border-color: #7aa2f7;
-    background-color: #1a1b26;
 }
 
-#inputText::placeholder {
-    color: #565f89;
-    font-style: italic;
-}
-
-/* Botão de enviar */
+/* Botão de enviar padronizado e sempre visível */
 #sendButton {
-    background-color: #7aa2f7;
-    color: #ffffff;
+    background-color: #7B68EE;
+    color: white;
     border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 15px;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
     font-weight: 600;
-    min-width: 100px;
-    margin: 0 8px;
+    min-height: 28px;
+    min-width: 70px;
+    max-width: 80px;
 }
 
 #sendButton:hover:not(:disabled) {
-    background-color: #89b4fa;
+    background-color: #8A77FD;
+    transform: translateY(-1px);
 }
 
 #sendButton:pressed:not(:disabled) {
-    background-color: #7aa2f7;
+    background-color: #6C59DF;
+    transform: translateY(0);
 }
 
 #sendButton:disabled {
-    background-color: #4c4f69;
+    background-color: #2A2D36;
+    color: #6B7280;
     opacity: 0.7;
 }
 
 /* Contador de caracteres */
 #charCounter {
-    color: #565f89;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 0 16px;
+    font-size: 12px;
+    color: #9096A2;
+    margin: 4px 8px;
+    opacity: 0.8;
 }
 
 #charCounter[warning="true"] {
-    color: #f7768e;
+    color: #EF4444;
+    opacity: 1;
 }
 
-/* Painel de conhecimento */
+/* Base de conhecimento */
 #knowledgePanel {
-    background-color: #24283b;
-    border-left: 1px solid #32344a;
-    padding: 20px;
+    background-color: #20232D;
+    border-left: 1px solid #2F3241;
+    padding: 16px 24px;
 }
 
-#knowledgeTitle {
-    font-size: 18px;
+.knowledge-card {
+    background-color: #272B36;
+    border: 1px solid #2F3241;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px 0;
+}
+
+.knowledge-card:hover {
+    border-color: #7B68EE;
+    background-color: #2C3241;
+}
+
+.knowledge-title {
     font-weight: 600;
-    color: #c0caf5;
-    margin-bottom: 16px;
+    font-size: 14px;
+    color: #E4E6EB;
+    margin-bottom: 4px;
 }
 
-#knowledgeList {
+.knowledge-description {
+    font-size: 13px;
+    color: #9096A2;
+    line-height: 1.5;
+}
+
+/* Melhor visualização para estado vazio */
+#emptyState {
+    text-align: center;
+    padding: 16px 12px;
+    color: #9096A2;
+    background-color: rgba(32, 35, 45, 0.3);
+    border-radius: 4px;
+    margin: 12px;
+}
+
+#emptyStateIcon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+#emptyStateText {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: #E4E6EB;
+}
+
+#emptyStateSubtext {
+    font-size: 12px;
+    color: #9096A2;
+    line-height: 1.4;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+/* Elementos de código */
+code {
+    background-color: #272B36;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #E4E6EB;
+}
+
+pre {
+    background-color: #272B36;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 12px 0;
+    overflow-x: auto;
+}
+
+pre code {
     background-color: transparent;
     border: none;
+    padding: 0;
+    color: #E4E6EB;
 }
 
-#knowledgeList::item {
-    background-color: #1f2335;
-    border: 1px solid #32344a;
-    border-radius: 12px;
-    margin-bottom: 12px;
-    padding: 16px;
-}
-
-#knowledgeList::item:hover {
-    background-color: #2a2e44;
-    border-color: #414868;
-}
-
-#knowledgeBaseName {
-    font-weight: 600;
-    color: #c0caf5;
-    font-size: 15px;
-}
-
-#knowledgeBaseScope {
-    color: #565f89;
-    font-size: 13px;
-}
-
-#knowledgeBaseScope:hover {
-    color: #9aa5ce;
-}
-
-#knowledgeBaseDescription {
-    color: #9aa5ce;
-    font-size: 14px;
-    margin-top: 12px;
-    line-height: 1.5;
+/* Container de entrada compacto */
+#inputContainer {
+    background-color: #20232D;
+    border-top: 1px solid #2F3241;
+    padding: 8px 12px;
 } 

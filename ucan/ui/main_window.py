@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ucan.config.constants import RESOURCES_DIR
 from ucan.core.app_controller import AppController
 from ucan.core.knowledge_base import KnowledgeBase
 from ucan.ui.chat_widget import ChatWidget
@@ -100,59 +101,34 @@ class MainWindow(QMainWindow):
         # Barra de ferramentas moderna
         toolbar = QToolBar("Principal")
         toolbar.setMovable(False)
-        toolbar.setIconSize(QSize(24, 24))
+        toolbar.setIconSize(QSize(16, 16))
         toolbar.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
         toolbar.setObjectName("mainToolbar")
         self.addToolBar(toolbar)
 
-        # Ações da barra de ferramentas com ícones modernos
-        new_conversation_action = QAction(
-            QIcon(
-                str(
-                    Path(__file__).parent.parent
-                    / "resources"
-                    / "icons"
-                    / "chat-plus.svg"
-                )
-            ),
-            "Nova Conversa",
-            self,
+        # Botão Nova Conversa com ícone
+        new_chat_action = QAction(
+            QIcon(str(RESOURCES_DIR / "icons" / "chat-plus.svg")), "Nova Conversa", self
         )
-        new_conversation_action.triggered.connect(self._show_new_conversation_dialog)
-        new_conversation_action.setStatusTip("Criar uma nova conversa")
-        toolbar.addAction(new_conversation_action)
+        new_chat_action.triggered.connect(self._show_new_conversation_dialog)
+        new_chat_action.setStatusTip("Criar uma nova conversa")
+        toolbar.addAction(new_chat_action)
 
+        # Botão Novo Tipo com ícone
         new_type_action = QAction(
-            QIcon(
-                str(
-                    Path(__file__).parent.parent
-                    / "resources"
-                    / "icons"
-                    / "folder-plus.svg"
-                )
-            ),
-            "Novo Tipo",
-            self,
+            QIcon(str(RESOURCES_DIR / "icons" / "system.svg")), "Novo Tipo", self
         )
         new_type_action.triggered.connect(self._show_conversation_type_dialog)
         new_type_action.setStatusTip("Criar um novo tipo de conversa")
         toolbar.addAction(new_type_action)
 
-        new_knowledge_base_action = QAction(
-            QIcon(
-                str(
-                    Path(__file__).parent.parent
-                    / "resources"
-                    / "icons"
-                    / "book-open.svg"
-                )
-            ),
-            "Nova Base",
-            self,
+        # Botão Nova Base com ícone
+        new_kb_action = QAction(
+            QIcon(str(RESOURCES_DIR / "icons" / "book-open.svg")), "Nova Base", self
         )
-        new_knowledge_base_action.triggered.connect(self._show_knowledge_base_dialog)
-        new_knowledge_base_action.setStatusTip("Criar uma nova base de conhecimento")
-        toolbar.addAction(new_knowledge_base_action)
+        new_kb_action.triggered.connect(self._show_knowledge_base_dialog)
+        new_kb_action.setStatusTip("Criar uma nova base de conhecimento")
+        toolbar.addAction(new_kb_action)
 
         # Splitter principal com proporções melhores
         splitter = QSplitter(Qt.Horizontal)

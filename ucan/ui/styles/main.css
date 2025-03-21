@@ -1,19 +1,28 @@
 /* UCAN Core UI - Modern Theme */
 /* Tema moderno e elegante para UCAN Core */
 
-/* Header */
+/* Header ainda mais compacto e bem organizado */
 #header {
     background-color: #1A1D26;
     border-bottom: 1px solid #2F3241;
+    padding: 8px 16px;
+    margin-bottom: 4px;
 }
 
 #appTitle {
     color: #7B68EE;
-    margin-bottom: 4px;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 0;
+    letter-spacing: -0.02em;
+    margin-right: 12px;
 }
 
 #appSubtitle {
     color: #9EA0A5;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0.9;
 }
 
 /* Container de conversas */
@@ -43,29 +52,37 @@ QMainWindow {
     background-color: #1A1D26;
 }
 
-/* Barra de ferramentas */
+/* Barra de ferramentas com botões padronizados e ícones claros */
 QToolBar {
-    background-color: rgba(26, 27, 38, 0.95);
-    border: none;
-    padding: 8px;
-    spacing: 8px;
+    background-color: #20232D;
+    border-bottom: 1px solid #2F3241;
+    spacing: 6px;
+    padding: 4px 10px;
+    min-height: 32px;
+    max-height: 32px;
 }
 
 QToolBar QToolButton {
-    background-color: transparent;
-    color: #E1E2E6;
+    background-color: rgba(123, 104, 238, 0.12);
+    color: #E4E6EB;
     border: none;
-    padding: 6px;
-    margin: 1px;
     border-radius: 4px;
+    padding: 4px 8px 4px 28px;  /* Reduzido e ajustado para ícone */
+    min-width: 90px;
+    min-height: 24px;
+    max-height: 24px;
+    font-weight: 500;
+    font-size: 12px;
+    text-align: left;
+    icon-size: 14px;
 }
 
 QToolBar QToolButton:hover {
-    background-color: #2A2E3A;
+    background-color: rgba(123, 104, 238, 0.2);
 }
 
 QToolBar QToolButton:pressed {
-    background-color: #343845;
+    background-color: rgba(123, 104, 238, 0.25);
 }
 
 /* Botões */
@@ -73,10 +90,11 @@ QPushButton {
     background-color: #7B68EE;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     padding: 8px 16px;
     font-weight: 600;
-    min-width: 80px;
+    font-size: 13px;
+    min-height: 32px;
 }
 
 QPushButton:hover {
@@ -90,16 +108,18 @@ QPushButton:pressed {
 QPushButton:disabled {
     background-color: #2A2D36;
     color: #6B7280;
+    opacity: 0.7;
 }
 
 /* Campo de texto e entrada de mensagem */
 QTextEdit, QLineEdit {
     background-color: #1F2937;
     border: 1px solid #374151;
-    border-radius: 6px;
-    padding: 8px;
-    selection-background-color: #7B68EE;
-    selection-color: white;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 42px;
 }
 
 QTextEdit:hover, QLineEdit:hover {
@@ -111,183 +131,234 @@ QTextEdit:focus, QLineEdit:focus {
     background-color: #1A1F2C;
 }
 
-/* Lista de conversas */
-QListWidget {
+/* Melhor aproveitamento de espaço nos painéis laterais */
+#conversationListWidget {
     background-color: #1A1D26;
-    border: none;
-    outline: none;
+    border-right: 1px solid #2F3241;
+    min-width: 220px;
+    max-width: 280px;
+    padding: 8px;
 }
 
-QListWidget::item {
-    background-color: #20232D;
+/* Cabeçalho do painel de conversas */
+#conversationsHeader {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E4E6EB;
+    padding: 0 0 8px 0;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #2F3241;
+}
+
+/* Campo de busca aprimorado */
+#searchConversations {
+    background-color: #272B36;
+    border: 1px solid #374151;
     border-radius: 8px;
-    padding: 12px;
-    margin: 4px 8px;
+    padding: 10px 16px 10px 36px;  /* Espaço para o ícone de busca */
+    margin: 0 0 16px 0;
+    font-size: 14px;
+    color: #E4E6EB;
+    background-image: url(ucan/resources/icons/search.svg);
+    background-repeat: no-repeat;
+    background-position: 12px center;
+    background-size: 16px;
+}
+
+#searchConversations:focus {
+    border-color: #7B68EE;
+    background-color: #2C3241;
+}
+
+#searchConversations::placeholder {
+    color: #9096A2;
+}
+
+/* Exibição mais compacta para itens de lista */
+QListWidget::item {
+    background-color: #272B36;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 3px 0;
+    min-height: 20px;
 }
 
 QListWidget::item:hover {
-    background-color: #272B36;
+    background-color: #2C3241;
+    border-left: 3px solid rgba(123, 104, 238, 0.5);
 }
 
 QListWidget::item:selected {
     background-color: #2C3241;
-    color: #7B68EE;
+    border-left: 3px solid #7B68EE;
 }
 
-/* Scrollbar moderna */
+/* Melhoria no uso de espaço da área de chat */
+#chatArea {
+    background-color: #1A1D26;
+    border: 1px solid #2F3241;
+    border-radius: 4px;
+    margin: 4px;
+}
+
+/* Container de mensagens - melhor legibilidade */
+#messageContainer {
+    padding: 16px;
+    margin: 4px 0;
+    background-color: transparent;
+}
+
+/* Campo de entrada de mensagem - mais eficiente */
+#messageInput {
+    background-color: #20232D;
+    border: 1px solid #2F3241;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 24px;
+}
+
+/* Botão de enviar - mais visível e acessível */
+#sendButton {
+    background-color: #7B68EE;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 38px;
+    min-width: 80px;
+    margin: 8px;
+}
+
+#sendButton:hover {
+    background-color: #8A77FD;
+}
+
+/* Painel de base de conhecimento */
+#knowledgeBasePanel {
+    background-color: #1A1D26;
+    border-left: 1px solid #2F3241;
+    padding: 8px;
+    min-width: 220px;
+    max-width: 280px;
+}
+
+/* Cabeçalho do painel de conhecimento */
+#knowledgeBaseHeader {
+    font-size: 14px;
+    font-weight: 600;
+    color: #E4E6EB;
+    padding: 0 0 8px 0;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #2F3241;
+}
+
+/* Cards de base de conhecimento */
+.knowledge-card {
+    background-color: #272B36;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 8px 0;
+    transition: all 0.2s ease;
+}
+
+.knowledge-card:hover {
+    border-color: #7B68EE;
+    background-color: #2C3241;
+    transform: translateY(-1px);
+}
+
+.knowledge-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #E4E6EB;
+    margin-bottom: 8px;
+}
+
+.knowledge-card-description {
+    font-size: 13px;
+    color: #9096A2;
+    line-height: 1.5;
+}
+
+/* Melhoria no uso de espaço da área de chat */
+#emptyKnowledgeState {
+    text-align: center;
+    padding: 12px 8px;
+    color: #9096A2;
+    background-color: rgba(32, 35, 45, 0.3);
+    border-radius: 4px;
+    margin: 8px 0;
+}
+
+#emptyKnowledgeIcon {
+    font-size: 32px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+#emptyKnowledgeText {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+/* Melhoria estética para área de conhecimento vazia */
+.knowledge-placeholder {
+    text-align: center;
+    padding: 12px;
+    background-color: rgba(123, 104, 238, 0.05);
+    border: 1px dashed rgba(123, 104, 238, 0.3);
+    border-radius: 6px;
+    margin: 8px 0;
+    cursor: pointer;
+}
+
+.knowledge-placeholder-icon {
+    font-size: 20px;
+    color: rgba(123, 104, 238, 0.6);
+    margin-bottom: 8px;
+}
+
+.knowledge-placeholder-text {
+    font-size: 13px;
+    color: #9EA0A5;
+    line-height: 1.4;
+}
+
+/* Ajustar tooltip para melhor contraste */
+QToolTip {
+    background-color: #272B36;
+    color: #FFFFFF;
+    border: 1px solid #374151;
+    border-radius: 4px;
+    padding: 6px 10px;
+    font-size: 12px;
+    opacity: 0.95;
+}
+
+/* Scrollbars discretas */
 QScrollBar:vertical {
     background: transparent;
-    width: 16px;
+    width: 8px;
     margin: 0;
 }
 
 QScrollBar::handle:vertical {
-    background: #374151;
-    min-height: 20px;
+    background: rgba(123, 104, 238, 0.2);
     border-radius: 4px;
-    margin: 2px;
+    min-height: 30px;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #4B5563;
-}
-
-/* Scrollbar horizontal */
-QScrollBar:horizontal {
-    border: none;
-    background-color: #1A1D26;
-    height: 8px;
-    margin: 0px;
-}
-
-QScrollBar::handle:horizontal {
-    background-color: #424757;
-    border-radius: 4px;
-    min-width: 30px;
-}
-
-QScrollBar::handle:horizontal:hover {
-    background-color: #7B68EE;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    border: none;
-    background: none;
-    width: 0px;
-}
-
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: none;
-}
-
-/* Mensagens */
-#message_user {
-    background-color: #7B68EE;
-    color: white;
-    border-radius: 16px 16px 2px 16px;
-    padding: 15px;
-    margin: 5px 25px 5px 5px;
-}
-
-#message_assistant {
-    background-color: #202330;
-    color: #E1E2E6;
-    border-radius: 16px 16px 16px 2px;
-    padding: 15px;
-    margin: 5px 5px 5px 25px;
-}
-
-/* Menu suspenso (ComboBox) */
-QComboBox {
-    background-color: #1A1D26;
-    color: #E1E2E6;
-    border: 1px solid #2A2E3A;
-    border-radius: 4px;
-    padding: 6px;
-    min-width: 6em;
-}
-
-QComboBox:hover {
-    border: 1px solid #7B68EE;
-}
-
-QComboBox::drop-down {
-    border: none;
-    width: 20px;
-}
-
-QComboBox::down-arrow {
-    image: url(ucan/resources/icons/down-arrow.svg);
-    width: 12px;
-    height: 12px;
-}
-
-QComboBox QAbstractItemView {
-    background-color: #202330;
-    color: #E1E2E6;
-    border: 1px solid #2A2E3A;
-    selection-background-color: rgba(123, 104, 238, 0.2);
-    selection-color: white;
-    outline: none;
-}
-
-/* Spinners, caixas de seleção e similares */
-QSpinBox, QDoubleSpinBox, QDateEdit, QTimeEdit {
-    background-color: #1A1D26;
-    color: #E1E2E6;
-    border: 1px solid #2A2E3A;
-    border-radius: 4px;
-    padding: 4px;
-}
-
-QCheckBox {
-    color: #E1E2E6;
-    spacing: 5px;
-}
-
-QCheckBox::indicator {
-    width: 18px;
-    height: 18px;
-    border-radius: 3px;
-    border: 1px solid #2A2E3A;
-}
-
-QCheckBox::indicator:unchecked {
-    background-color: #1A1D26;
-}
-
-QCheckBox::indicator:checked {
-    background-color: #7B68EE;
-    image: url(ucan/resources/icons/check.svg);
-}
-
-/* Botão de enviar especial para o chat */
-#send_button {
-    background-color: #7B68EE;
-    border-radius: 18px;
-    padding: 8px;
-    margin: 2px;
-    min-width: 36px;
-    min-height: 36px;
-    icon-size: 18px;
-}
-
-#send_button:hover {
-    background-color: #8A77FD;
-}
-
-#send_button:pressed {
-    background-color: #6C59DF;
-}
-
-/* Barra de status estilizada */
-QStatusBar {
-    background-color: #202330;
-    color: #9EA0A5;
-    border-top: 1px solid #2A2E3A;
-    min-height: 24px;
-    padding: 2px;
-    font-size: 9pt;
+    background: rgba(123, 104, 238, 0.3);
+    width: 10px;
 }
 
 /* Menu e barra de status */
@@ -323,61 +394,15 @@ QMenu::item:selected {
     color: white;
 }
 
-/* Toolbar estilizada */
-QToolBar {
-    background-color: #20232D;
-    border-bottom: 1px solid #2F3241;
-    spacing: 15px;
-    padding: 10px 20px;
-    min-height: 60px;
-}
-
-QToolBar QToolButton {
-    background-color: rgba(123, 104, 238, 0.12);
-    color: #E1E2E6;
-    border: none;
-    border-radius: 8px;
-    padding: 12px 18px;
-    min-width: 100px;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-QToolBar QToolButton:hover {
-    background-color: rgba(123, 104, 238, 0.20);
-}
-
-QToolBar QToolButton:pressed {
-    background-color: rgba(123, 104, 238, 0.30);
-}
-
 /* Splitter modernizado */
 QSplitter::handle {
     background-color: #2A2D36;
-    margin: 1px;
+    width: 1px;
 }
 
 QSplitter::handle:hover {
     background-color: #7B68EE;
     width: 2px;
-}
-
-/* Barra lateral */
-#conversationListWidget {
-    background-color: #1A1D26;
-    border-right: 1px solid #2F3241;
-    min-width: 280px;
-    max-width: 350px;
-    padding: 10px;
-}
-
-QLabel#conversationsHeader {
-    font-size: 18px;
-    font-weight: 600;
-    color: #E1E2E6;
-    padding: 10px;
-    border-bottom: 1px solid #2F3241;
-    margin-bottom: 10px;
 }
 
 /* Widgets de conversa */
@@ -429,10 +454,11 @@ QPushButton#sendButton {
     background-color: #7B68EE;
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 15px;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
     font-weight: 600;
+    min-height: 42px;
     min-width: 100px;
     margin: 0 8px;
 }
@@ -460,12 +486,6 @@ QScrollArea > QWidget > QWidget {
     background-color: #15171E;
 }
 
-/* Container de mensagens */
-#messageContainer {
-    background-color: transparent;
-    padding: 10px 20px;
-}
-
 /* Estilo para mensagens */
 #messageHeader {
     margin-bottom: 8px;
@@ -473,59 +493,18 @@ QScrollArea > QWidget > QWidget {
 
 #roleName {
     font-weight: 600;
-    color: #E1E2E6;
+    font-size: 14px;
 }
 
 #timestampLabel {
-    color: rgba(225, 226, 230, 0.6);
     font-size: 12px;
+    color: rgba(225, 226, 230, 0.6);
 }
 
 /* Conteúdo de mensagem */
 #messageContent {
     line-height: 1.6;
     color: #E1E2E6;
-}
-
-/* Bases de conhecimento */
-#knowledgeBasePanel {
-    background-color: #1A1D26;
-    border-left: 1px solid #2F3241;
-    padding: 15px;
-    min-width: 250px;
-    max-width: 320px;
-}
-
-#knowledgeBasePanel QLabel {
-    font-size: 16px;
-    font-weight: 600;
-    color: #E1E2E6;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #2F3241;
-}
-
-/* Scrollbars modernos */
-QScrollBar:vertical {
-    background-color: transparent;
-    width: 8px;
-    margin: 0px;
-}
-
-QScrollBar::handle:vertical {
-    background-color: rgba(123, 104, 238, 0.3);
-    border-radius: 4px;
-    min-height: 30px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background-color: rgba(123, 104, 238, 0.5);
-    width: 10px;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: none;
-    height: 0px;
 }
 
 /* Combo box estilizado */
@@ -569,60 +548,18 @@ QLineEdit:focus {
     background-color: #15171E;
 }
 
-/* Container de mensagens */
-#messageContainer {
-    background-color: transparent;
-    padding: 10px 20px;
-}
-
-/* Estilo para mensagens */
-#messageHeader {
-    margin-bottom: 8px;
-}
-
-#roleName {
-    font-weight: 600;
-    color: #E1E2E6;
-}
-
-#timestampLabel {
-    color: rgba(225, 226, 230, 0.6);
-    font-size: 12px;
-}
-
-/* Conteúdo de mensagem */
-#messageContent {
-    line-height: 1.6;
-    color: #E1E2E6;
-}
-
-/* Bases de conhecimento */
-#knowledgeBasePanel {
-    background-color: #1A1D26;
-    border-left: 1px solid #2F3241;
-    padding: 15px;
-    min-width: 250px;
-    max-width: 320px;
-}
-
-#knowledgeBasePanel QLabel {
-    font-size: 16px;
-    font-weight: 600;
-    color: #E1E2E6;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #2F3241;
-}
-
 /* Campo de entrada de texto */
 #messageInput {
     background-color: #1A1D26;
     color: #E1E2E6;
     border: 1px solid #2F3241;
-    border-radius: 16px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 12px 16px;
     font-size: 14px;
-    margin: 10px 15px;
-    margin-right: calc(15px + 100px); /* Espaço extra para o botão */
+    line-height: 1.5;
+    min-height: 42px;
+    margin: 8px 12px;
+    margin-right: calc(12px + 116px); /* Espaço para o botão (100px + 16px de margins) */
 }
 
 #messageInput:focus {
@@ -638,10 +575,11 @@ QLineEdit:focus {
     background-color: #7B68EE;
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 12px 24px;
-    font-size: 15px;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
     font-weight: 600;
+    min-height: 42px;
     min-width: 100px;
     margin: 0 8px;
 }

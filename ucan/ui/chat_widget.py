@@ -4,6 +4,7 @@ Widget de chat da aplicação UCAN.
 
 import asyncio
 import logging
+import os
 from typing import List, Optional
 
 import markdown
@@ -266,7 +267,15 @@ class ChatWidget(QWidget):
         super().__init__(parent)
         self.controller = controller
         self.setObjectName("chatWidget")
+
+        # Configurações iniciais
+        self.conversation_id = None
+        self.current_message_id = None
+        self.last_message_role = None
+
+        # Setup da UI
         self._setup_ui()
+        self._setup_empty_state()  # Adicionar estado vazio inicialmente
         self._setup_signals()
         self._last_message_date = None
         self._current_conversation: Optional[Conversation] = None
@@ -379,7 +388,8 @@ class ChatWidget(QWidget):
             button = QPushButton()
             button.setObjectName(f"formatButton_{btn_id}")
             button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / f"{btn_id}.svg")))
-            button.setIconSize(QSize(16, 16))
+            button.setIconSize(QSize(14, 14))
+            button.setFixedSize(QSize(22, 22))
             button.setToolTip(tooltip)
             button.setCheckable(True)
             button.clicked.connect(
@@ -394,7 +404,8 @@ class ChatWidget(QWidget):
         self.preview_button = QPushButton()
         self.preview_button.setObjectName("previewButton")
         self.preview_button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / "preview.svg")))
-        self.preview_button.setIconSize(QSize(16, 16))
+        self.preview_button.setIconSize(QSize(14, 14))
+        self.preview_button.setFixedSize(QSize(22, 22))
         self.preview_button.setToolTip("Visualizar (Ctrl+P)")
         self.preview_button.setCheckable(True)
         self.preview_button.clicked.connect(self._toggle_preview)
@@ -421,11 +432,10 @@ class ChatWidget(QWidget):
         input_row_layout.addWidget(self.char_counter)
 
         # Send button
-        self.send_button = QPushButton()
+        self.send_button = QPushButton("Enviar")
         self.send_button.setObjectName("sendButton")
         self.send_button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / "send.svg")))
-        self.send_button.setIconSize(QSize(20, 20))
-        self.send_button.setFixedSize(40, 40)
+        self.send_button.setIconSize(QSize(16, 16))
         self.send_button.setToolTip("Enviar mensagem (Ctrl+Enter)")
         self.send_button.clicked.connect(self._send_message)
         input_row_layout.addWidget(self.send_button)
@@ -721,17 +731,22 @@ class ChatWidget(QWidget):
         """Define a conversa atual."""
         self.current_conversation = conversation
 
-        # Clear existing messages
-        while self.message_layout.count():
-            item = self.message_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        # Verificar se o layout ainda existe antes de tentar manipulá-lo
+        try:
+            # Clear existing messages
+            while self.message_layout and self.message_layout.count():
+                item = self.message_layout.takeAt(0)
+                if item and item.widget():
+                    item.widget().deleteLater()
 
-        # Add new messages
-        if conversation:
-            messages = conversation.get_messages()
-            for message in messages:
-                self._add_message(message)
+            # Add new messages
+            if conversation:
+                messages = conversation.get_messages()
+                for message in messages:
+                    self._add_message(message)
+        except RuntimeError:
+            # O layout pode ter sido excluído pelo Qt
+            pass
 
         self.update_title()
         self.update_knowledge_bases()
@@ -786,3 +801,68 @@ class ChatWidget(QWidget):
 
             # Atualiza também os componentes filhos importantes
             self.input_text.setStyleSheet(theme.generate_stylesheet())
+
+    def _setup_empty_state(self):
+        """Configura o estado vazio quando não há mensagens."""
+        empty_widget = QWidget()
+        empty_layout = QVBoxLayout(empty_widget)
+
+        icon_label = QLabel()
+        icon_label.setObjectName("emptyStateIcon")
+        # Usar um ícone adequado para o estado vazio
+        icon_path = os.path.join(
+            os.path.dirname(__file__), "../resources/icons/chat-plus.svg"
+        )
+        icon_pixmap = QPixmap(icon_path)
+        if not icon_pixmap.isNull():
+            icon_label.setPixmap(
+                icon_pixmap.scaled(48, 48, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            )
+
+        text_label = QLabel("Inicie uma nova conversa")
+        text_label.setObjectName("emptyStateText")
+
+        subtext_label = QLabel(
+            "Digite sua mensagem abaixo para começar a conversar com o assistente."
+        )
+        subtext_label.setObjectName("emptyStateSubtext")
+        subtext_label.setWordWrap(True)
+
+        # Botão de sugestão para início rápido
+        suggestion_widget = QWidget()
+        suggestion_layout = QHBoxLayout(suggestion_widget)
+        suggestion_layout.setContentsMargins(0, 12, 0, 0)
+
+        suggestion_button = QPushButton("Sugerir um tópico")
+        suggestion_button.setObjectName("suggestionButton")
+        suggestion_button.setCursor(Qt.PointingHandCursor)
+        suggestion_button.clicked.connect(self._suggest_topic)
+
+        suggestion_layout.addStretch()
+        suggestion_layout.addWidget(suggestion_button)
+        suggestion_layout.addStretch()
+
+        empty_layout.addStretch()
+        empty_layout.addWidget(icon_label, 0, Qt.AlignCenter)
+        empty_layout.addWidget(text_label, 0, Qt.AlignCenter)
+        empty_layout.addWidget(subtext_label, 0, Qt.AlignCenter)
+        empty_layout.addWidget(suggestion_widget)
+        empty_layout.addStretch()
+
+        self.empty_state_widget = empty_widget
+        self.scroll_area.setWidget(empty_widget)
+
+    def _suggest_topic(self):
+        """Sugere um tópico para início de conversa."""
+        sugestoes = [
+            "Como posso criar uma API REST com FastAPI?",
+            "Explique como funciona a herança múltipla em Python",
+            "Quais as melhores práticas para testes unitários?",
+            "Como posso otimizar o desempenho da minha aplicação Qt?",
+            "Explique o padrão de design Observer e como implementá-lo",
+        ]
+        import random
+
+        sugestao = random.choice(sugestoes)
+        self.input_text.setPlainText(sugestao)
+        self.input_text.setFocus()
