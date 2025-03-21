@@ -165,12 +165,10 @@ class StyleManager(QObject):
                 border: 1px solid #32344a;
                 margin: 4px 0;
                 max-width: 85%;
-                transition: all 0.2s ease-in-out;
             }
 
             #messageContainer:hover {
                 border-color: #414868;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
             }
 
             #message_assistant #messageContainer {
@@ -245,7 +243,6 @@ class StyleManager(QObject):
             #messageContent {
                 color: #c0caf5;
                 font-size: 14px;
-                line-height: 1.5;
                 padding: 4px 0;
             }
 
@@ -272,7 +269,6 @@ class StyleManager(QObject):
                 border-radius: 8px;
                 border: 1px solid #32344a;
                 margin: 8px 0;
-                overflow-x: auto;
             }
 
             #messageContent pre code {
@@ -356,9 +352,9 @@ class StyleManager(QObject):
 
             /* Input Container */
             #inputContainer {
-                background-color: #24283b;
+                background-color: #1f2335;
                 border-top: 1px solid #32344a;
-                padding: 8px;
+                padding: 12px 20px;
             }
 
             /* Input Widget */
@@ -374,7 +370,6 @@ class StyleManager(QObject):
                 border-radius: 8px;
                 padding: 8px 12px;
                 font-size: 14px;
-                line-height: 1.5;
                 min-height: 36px;
                 max-height: 120px;
             }
@@ -453,103 +448,194 @@ class StyleManager(QObject):
                 font-weight: 500;
             }
 
-            /* Conversation List */
-            #conversationList {
-                background-color: #24283b;
-                border-right: 1px solid #32344a;
-                min-width: 260px;
-                max-width: 300px;
+            /* Empty State */
+            #emptyStateIcon {
+                min-width: 64px;
+                min-height: 64px;
+                opacity: 0.9;
+                margin: 0 auto;
             }
 
-            #conversationHeader {
-                background-color: transparent;
-                padding: 12px 16px;
-                border-bottom: 1px solid #32344a;
-            }
-
-            #conversationTitle {
+            #emptyStateText {
                 color: #c0caf5;
-                font-size: 16px;
+                font-size: 24px;
                 font-weight: 600;
+                margin: 16px 0 8px 0;
             }
 
-            #conversationSearch {
-                margin: 8px 12px;
-                padding: 6px 10px;
-                background-color: #1a1b26;
-                border: 1px solid #32344a;
-                border-radius: 6px;
+            #emptyStateSubtext {
                 color: #a9b1d6;
-                font-size: 13px;
+                font-size: 14px;
+                max-width: 400px;
+                margin: 0 auto;
             }
 
-            #conversationSearch:focus {
-                border-color: #7aa2f7;
-            }
-
-            #conversationItem {
-                padding: 10px 12px;
-                border-radius: 6px;
-                margin: 2px 6px;
-            }
-
-            #conversationItem:hover {
-                background-color: #2a2e44;
-            }
-
-            #conversationItem[selected="true"] {
-                background-color: #414868;
-            }
-
-            #conversationItemTitle {
-                color: #c0caf5;
-                font-weight: 600;
-                font-size: 13px;
-                margin-bottom: 2px;
-            }
-
-            #conversationItemPreview {
-                color: #565f89;
-                font-size: 12px;
-                line-height: 1.3;
-            }
-
-            #conversationItemTime {
-                color: #565f89;
-                font-size: 11px;
-                margin-top: 2px;
-            }
-
-            #conversationItemBadge {
-                background-color: #f7768e;
+            #suggestionButton {
+                background-color: #7aa2f7;
                 color: #1a1b26;
-                border-radius: 8px;
-                padding: 1px 5px;
-                font-size: 11px;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
                 font-weight: 600;
-                min-width: 16px;
-                text-align: center;
+                font-size: 14px;
+                margin-top: 24px;
+                min-width: 200px;
             }
 
-            #charCounter {
-                color: #565f89;
-                font-size: 11px;
-                padding: 0 4px;
+            #suggestionButton:hover {
+                background-color: #89b4fa;
             }
 
             /* Format Bar */
             #formatBar {
-                background-color: transparent;
-                border-bottom: 1px solid #32344a;
-                padding: 4px 0;
+                background-color: #24283b;
+                border-radius: 6px;
+                padding: 2px 6px;
+                margin-bottom: 8px;
             }
 
-            #formatBar QToolTip {
-                background-color: #24283b;
-                color: #c0caf5;
-                border: 1px solid #32344a;
+            QPushButton[objectName^="formatButton_"] {
+                background-color: transparent;
+                border: 1px solid #414868;
                 border-radius: 4px;
-                padding: 4px 8px;
+                padding: 2px;
+                margin: 0 2px;
+            }
+
+            QPushButton[objectName^="formatButton_"]:hover {
+                background-color: #414868;
+            }
+
+            QPushButton[objectName^="formatButton_"]:checked {
+                background-color: #7aa2f7;
+                border-color: #7aa2f7;
+            }
+
+            #previewButton {
+                background-color: transparent;
+                border: 1px solid #414868;
+                border-radius: 4px;
+                padding: 2px;
+                margin-left: 4px;
+            }
+
+            #previewButton:hover {
+                background-color: #414868;
+            }
+
+            #previewButton:checked {
+                background-color: #7aa2f7;
+                border-color: #7aa2f7;
+            }
+
+            /* Input Area */
+            #inputContainer {
+                background-color: #1f2335;
+                border-top: 1px solid #32344a;
+                padding: 12px 20px;
+            }
+
+            #messageInput {
+                background-color: #24283b;
+                border: 1px solid #32344a;
+                border-radius: 6px;
+                color: #c0caf5;
+                font-size: 14px;
+                padding: 8px 12px;
+                margin-right: 8px;
+            }
+
+            #messageInput:focus {
+                border-color: #7aa2f7;
+            }
+
+            #charCounter {
+                color: #565f89;
+                font-size: 12px;
+                min-width: 60px;
+                margin: 0 8px;
+            }
+
+            #charCounter[warning="true"] {
+                color: #f7768e;
+            }
+
+            #sendButton {
+                background-color: #7aa2f7;
+                color: #1a1b26;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-weight: 600;
+                min-width: 100px;
+            }
+
+            #sendButton:hover {
+                background-color: #89b4fa;
+            }
+
+            #sendButton:disabled {
+                background-color: #414868;
+                color: #565f89;
+            }
+        """
+
+    def get_empty_state_stylesheet(self) -> str:
+        """
+        Retorna os estilos específicos para o estado vazio.
+
+        Returns:
+            str: Stylesheet CSS para o estado vazio
+        """
+        return """
+            #emptyState {
+                background-color: #1a1b26;
+            }
+            
+            #emptyStatePanel {
+                background-color: #24283b;
+                border: 1px solid #32344a;
+                border-radius: 12px;
+                max-width: 600px;
+            }
+            
+            #emptyStateIcon {
+                min-width: 80px;
+                min-height: 80px;
+                opacity: 0.9;
+            }
+            
+            #emptyStateText {
+                color: #c0caf5;
+                font-size: 24px;
+                font-weight: 600;
+                margin: 16px 0 8px 0;
+            }
+            
+            #emptyStateSubtext {
+                color: #a9b1d6;
+                font-size: 14px;
+                max-width: 400px;
+            }
+            
+            #suggestionButton {
+                background-color: #7aa2f7;
+                color: #1a1b26;
+                border: none;
+                border-radius: 6px;
+                padding: 10px 20px;
+                font-weight: 600;
+                font-size: 14px;
+                min-width: 200px;
+                min-height: 40px;
+            }
+            
+            #suggestionButton:hover {
+                background-color: #89b4fa;
+            }
+            
+            #suggestionButton:pressed {
+                background-color: #6c91e4;
             }
         """
 

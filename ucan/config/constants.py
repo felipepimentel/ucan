@@ -1,23 +1,89 @@
 """
-Constantes e configurações para o aplicativo UCAN.
+Constantes da aplicação.
 """
 
+import os
 from pathlib import Path
 from typing import List
 
 # Diretórios
 ROOT_DIR = Path(__file__).parent.parent
-RESOURCES_DIR = ROOT_DIR / "resources"
+BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+RESOURCES_DIR = BASE_DIR / "resources"
 ICONS_DIR = RESOURCES_DIR / "icons"
-CONFIG_DIR: Path = ROOT_DIR / "ucan" / "config"
+CONFIG_DIR = ROOT_DIR / "config"
+
+# Garante que os diretórios existem
+RESOURCES_DIR.mkdir(parents=True, exist_ok=True)
+ICONS_DIR.mkdir(parents=True, exist_ok=True)
+CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+# Arquivo de configuração
+CONFIG_FILE = BASE_DIR / "config.json"
+
+# Arquivo de log
+LOG_FILE = BASE_DIR / "logs" / "ucan.log"
+
+# Versão da aplicação
+VERSION = "0.1.0"
 
 # Configurações da aplicação
-APP_NAME: str = "UCAN"
-APP_VERSION: str = "0.1.0"
-APP_DESCRIPTION: str = (
-    "Um aplicativo para interação com modelos de linguagem de última geração."
-)
-APP_AUTHOR: str = "UCAN Team"
+SUPPORTED_LANGUAGES: List[str] = ["pt-BR", "en-US"]
+DEFAULT_LANGUAGE: str = "pt-BR"
+
+# Configurações de chat
+MAX_MESSAGE_LENGTH: int = 2000
+MAX_CONTEXT_LENGTH: int = 8000
+MAX_TOKENS: int = 4000
+
+# Configurações de interface
+WINDOW_MIN_WIDTH = 800
+WINDOW_MIN_HEIGHT = 600
+WINDOW_DEFAULT_WIDTH = 1200
+WINDOW_DEFAULT_HEIGHT = 800
+
+# Configurações de interface
+WINDOW_WIDTH: int = 1200
+WINDOW_HEIGHT: int = 800
+WINDOW_MIN_WIDTH: int = 800
+WINDOW_MIN_HEIGHT: int = 600
+WINDOW_TITLE: str = "UCAN - Universal Chat Assistant Network"
+
+# Configurações de chat
+MESSAGE_CHUNK_SIZE: int = 1000
+
+# Configurações de interface
+CHAT_WIDTH: int = 800
+CHAT_HEIGHT: int = 600
+CHAT_MIN_WIDTH: int = 400
+CHAT_MIN_HEIGHT: int = 300
+SIDEBAR_WIDTH: int = 300
+
+# Modelos de IA disponíveis
+AI_MODELS: List[str] = [
+    "gpt-3.5-turbo",
+    "gpt-4",
+    "claude-3-opus-20240229",
+    "claude-3-sonnet-20240229",
+]
+
+# Modelo padrão
+DEFAULT_AI_MODEL: str = "gpt-3.5-turbo"
+
+# Mensagens do sistema
+WELCOME_MESSAGE: str = "Olá! Como posso ajudar você hoje?"
+ERROR_MESSAGE: str = "Ocorreu um erro ao processar sua solicitação."
+LOADING_MESSAGE: str = "Processando..."
+
+# Diretórios
+CONVERSATIONS_DIR: str = "conversations"
+LOGS_DIR: str = "logs"
+CACHE_DIR: str = "cache"
+
+# Novas constantes adicionadas
+PADDING_SMALL: int = 4
+PADDING_NORMAL: int = 8
+PADDING_LARGE: int = 16
 
 # Configurações de tema
 DARK_THEME: bool = True
@@ -65,51 +131,15 @@ BORDER_RADIUS: int = 4
 BORDER_RADIUS_LARGE: int = 8
 BORDER_WIDTH: int = 1
 
-# Configurações de janela
-WINDOW_WIDTH: int = 1200
-WINDOW_HEIGHT: int = 800
-WINDOW_MIN_WIDTH: int = 800
-WINDOW_MIN_HEIGHT: int = 600
-WINDOW_TITLE: str = "UCAN - Universal Chat Assistant Network"
+# Configurações de aplicação
+APP_NAME: str = "UCAN"
+APP_VERSION: str = "0.1.0"
+APP_DESCRIPTION: str = (
+    "Um aplicativo para interação com modelos de linguagem de última geração."
+)
+APP_AUTHOR: str = "UCAN Team"
 
-# Configurações de chat
-MAX_MESSAGE_LENGTH: int = 2000
-MAX_CONTEXT_LENGTH: int = 8000
-MAX_TOKENS: int = 4000
+# Configurações de aplicação
 DEFAULT_MODEL: str = "gpt-3.5-turbo"
 DEFAULT_TEMPERATURE: float = 0.7
 DEFAULT_API_TIMEOUT: int = 60
-MESSAGE_CHUNK_SIZE: int = 1000
-
-# Configurações de interface
-CHAT_WIDTH: int = 800
-CHAT_HEIGHT: int = 600
-CHAT_MIN_WIDTH: int = 400
-CHAT_MIN_HEIGHT: int = 300
-SIDEBAR_WIDTH: int = 300
-
-# Modelos de IA disponíveis
-AI_MODELS: List[str] = [
-    "gpt-3.5-turbo",
-    "gpt-4",
-    "claude-3-opus-20240229",
-    "claude-3-sonnet-20240229",
-]
-
-# Modelo padrão
-DEFAULT_AI_MODEL: str = "gpt-3.5-turbo"
-
-# Mensagens do sistema
-WELCOME_MESSAGE: str = "Olá! Como posso ajudar você hoje?"
-ERROR_MESSAGE: str = "Ocorreu um erro ao processar sua solicitação."
-LOADING_MESSAGE: str = "Processando..."
-
-# Diretórios
-CONVERSATIONS_DIR: str = "conversations"
-LOGS_DIR: str = "logs"
-CACHE_DIR: str = "cache"
-
-# Novas constantes adicionadas
-PADDING_SMALL: int = 4
-PADDING_NORMAL: int = 8
-PADDING_LARGE: int = 16

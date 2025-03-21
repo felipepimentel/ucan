@@ -212,53 +212,61 @@ class ThemeManager(QObject):
             self.css_file_changed.emit()
 
     def _load_builtin_themes(self):
-        """Load built-in themes."""
-        # Tema escuro com arquivo CSS
-        main_css_path = self._styles_dir / "main.css"
-        if main_css_path.exists():
-            dark_theme = Theme(
-                id="dark",
-                name="Dark Theme",
-                colors={
-                    "background": "#15171E",
-                    "foreground": "#E1E2E6",
-                    "secondary_background": "#20232D",
-                    "accent": "#7B68EE",
-                    "button_background": "#7B68EE",
-                    "button_foreground": "#ffffff",
-                    "button_hover_background": "#9370DB",
-                    "button_active_background": "#6A5ACD",
-                    "input_background": "#1A1D26",
-                    "input_foreground": "#E1E2E6",
-                    "hover_background": "rgba(123, 104, 238, 0.12)",
-                    "selection_background": "rgba(123, 104, 238, 0.20)",
-                    "selection_foreground": "#E1E2E6",
-                    "border": "#2F3241",
-                },
-                is_dark=True,
-                css_path=str(main_css_path),
-            )
-        else:
-            dark_theme = Theme(
-                id="dark",
-                name="Dark Theme",
-                colors={
-                    "background": "#1e1e1e",
-                    "foreground": "#ffffff",
-                    "secondary_background": "#2d2d2d",
-                    "button_background": "#2d2d2d",
-                    "button_foreground": "#ffffff",
-                    "button_hover_background": "#3d3d3d",
-                    "button_active_background": "#4d4d4d",
-                    "input_background": "#2d2d2d",
-                    "input_foreground": "#ffffff",
-                    "hover_background": "#3d3d3d",
-                    "selection_background": "#264f78",
-                    "selection_foreground": "#ffffff",
-                    "border": "#3d3d3d",
-                },
-                is_dark=True,
-            )
+        """Carrega os temas embutidos."""
+        dark_theme = Theme(
+            id="dark",
+            name="Dark",
+            is_dark=True,
+            colors={
+                "background": "#1A1A1A",
+                "foreground": "#E1E1E1",
+                "secondary_background": "#2A2A2A",
+                "border": "#3A3A3A",
+                "accent": "#7B68EE",
+                "error": "#FF6B6B",
+                "success": "#4CAF50",
+                "warning": "#FFB86C",
+                "button_background": "#7B68EE",
+                "button_foreground": "#FFFFFF",
+                "button_hover_background": "#8F7EF2",
+                "button_active_background": "#6A57EA",
+                "input_background": "#2A2A2A",
+                "input_foreground": "#E1E1E1",
+                "selection_background": "#7B68EE",
+                "selection_foreground": "#FFFFFF",
+                "hover_background": "#3A3A3A",
+            },
+            css_path=str(RESOURCES_DIR / "themes/dark.qss"),
+            metadata={
+                "author": "UCAN Team",
+                "version": "1.0",
+                "description": "Tema escuro padrão do UCAN",
+            },
+        )
+
+        # Carrega os arquivos CSS adicionais
+        css_files = [
+            RESOURCES_DIR / "themes/dark.qss",
+            RESOURCES_DIR / "styles/knowledge.qss",  # Novo arquivo de estilo
+        ]
+
+        # Combina todos os arquivos CSS em um único stylesheet
+        combined_css = ""
+        for css_file in css_files:
+            if css_file.exists():
+                with open(css_file, "r", encoding="utf-8") as f:
+                    combined_css += f.read() + "\n"
+
+        # Cria um arquivo temporário com o CSS combinado
+        temp_css_path = RESOURCES_DIR / "themes/dark_combined.qss"
+        with open(temp_css_path, "w", encoding="utf-8") as f:
+            f.write(combined_css)
+
+        # Atualiza o caminho do CSS no tema
+        dark_theme.css_path = str(temp_css_path)
+
+        self._themes["dark"] = dark_theme
+        self._current_theme = dark_theme
 
         light_theme = Theme(
             id="light",

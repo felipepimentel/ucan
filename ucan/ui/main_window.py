@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMenuBar,
     QMessageBox,
+    QPushButton,
     QSplitter,
     QStatusBar,
     QToolBar,
@@ -381,22 +382,64 @@ class MainWindow(QMainWindow):
         )
 
     def _apply_theme(self):
-        """Apply the current theme to the window."""
-        theme = theme_manager.current_theme
-        if theme:
-            self.setStyleSheet(theme.generate_stylesheet())
+        """
+        Aplica o tema atual à janela principal.
+        """
+        try:
+            # Aplicar estilos básicos diretamente aos widgets importantes
+            self.setStyleSheet("""
+                QMainWindow {
+                    background-color: #1a1b26;
+                }
+                
+                QMenuBar {
+                    background-color: #24283b;
+                    color: #a9b1d6;
+                    border-bottom: 1px solid #32344a;
+                }
+                
+                QStatusBar {
+                    background-color: #1f2335;
+                    color: #a9b1d6;
+                    border-top: 1px solid #32344a;
+                }
+                
+                QPushButton {
+                    background-color: #7aa2f7;
+                    color: #1a1b26;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    font-weight: 600;
+                }
+            """)
+            
+            # Aplicar estilos específicos aos componentes principais
+            if hasattr(self, 'chat_widget'):
+                self.chat_widget._apply_theme()
+                
+            if hasattr(self, 'conversation_list'):
+                self.conversation_list._apply_theme()
+        
+        except Exception as e:
+            logger.error(f"Erro ao aplicar tema à janela principal: {e}")
+            # Se falhar, aplicar estilo mínimo
+            self.setStyleSheet("background-color: #1a1b26;")
 
     def _on_css_file_changed(self):
         """
         Chamado quando um arquivo CSS é alterado.
         Atualiza toda a UI imediatamente.
         """
-        print("Applying hot reload changes to the entire UI")
+        logger.info("Applying hot reload changes to the entire UI")
         self._apply_theme()
 
         # Atualiza também widgets filhos importantes
-        self.chat_widget._apply_theme()
-        self.conversation_list._apply_theme()
+        if hasattr(self, 'chat_widget'):
+            self.chat_widget._apply_theme()
+            
+        if hasattr(self, 'conversation_list'):
+            self.conversation_list._apply_theme()
 
         # Atualiza a barra de status com mensagem informativa
         self.status_bar.showMessage("Hot reload: CSS atualizado", 3000)

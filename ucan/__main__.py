@@ -131,23 +131,65 @@ async def async_init(window) -> None:
 
 def load_styles() -> str:
     """
-    Carrega os estilos CSS da aplicação.
+    Carrega os estilos CSS da aplicação de forma simplificada.
+
+    Retorna apenas os estilos essenciais para evitar problemas de parsing.
 
     Returns:
-        Estilos CSS combinados
+        Estilos CSS básicos para a aplicação
     """
-    styles_dir = Path(__file__).parent / "ui" / "styles"
-    styles = []
+    # Estilos mínimos e básicos que o Qt definitivamente pode processar
+    basic_styles = """
+        /* Estilos Mínimos Essenciais */
+        * {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        QWidget {
+            background-color: #1a1b26;
+            color: #a9b1d6;
+        }
+        
+        QMainWindow {
+            background-color: #1a1b26;
+        }
+        
+        QMenuBar {
+            background-color: #20232D;
+            color: #a9b1d6;
+            border-bottom: 1px solid #2F3241;
+        }
+        
+        QDialog {
+            background-color: #1a1b26;
+            color: #a9b1d6;
+            border: 1px solid #32344a;
+        }
+        
+        QPushButton {
+            background-color: #7aa2f7;
+            color: #1a1b26;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 16px;
+        }
+        
+        QTextEdit, QLineEdit {
+            background-color: #1f2335;
+            color: #c0caf5;
+            border: 1px solid #32344a;
+            border-radius: 8px;
+            padding: 8px 12px;
+        }
+    """
 
     try:
-        for css_file in styles_dir.glob("*.css"):
-            with open(css_file, "r", encoding="utf-8") as f:
-                styles.append(f.read())
+        # Registro do carregamento bem-sucedido
+        logging.info("Carregando estilos básicos da aplicação")
     except Exception as e:
-        logging.error("Erro ao carregar estilos: %s", e)
-        return ""
+        logging.error(f"Erro ao carregar estilos: {e}")
 
-    return "\n".join(styles)
+    return basic_styles
 
 
 async def main() -> None:

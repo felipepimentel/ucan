@@ -1,0 +1,134 @@
+#knowledgePanel {
+    background-color: #1E1E1E;
+    border-radius: 8px;
+    min-width: 280px;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#knowledgeTitleContainer {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+#knowledgeTitle {
+    color: #E1E1E1;
+    font-size: 16px;
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+#knowledgePanelDescription {
+    color: #A0A0A0;
+    font-size: 13px;
+    margin: 0 16px 16px 16px;
+    line-height: 1.4;
+}
+
+#knowledgeList {
+    background: transparent;
+    border: none;
+    padding: 0 8px;
+}
+
+#knowledgeList::item {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+}
+
+#knowledgeList::item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
+}
+
+#emptyKnowledgeLabel {
+    color: #808080;
+    font-size: 14px;
+    padding: 32px 24px;
+    margin: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.knowledge-base-item {
+    background: transparent;
+}
+
+.knowledge-base-name {
+    color: #E1E1E1;
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+
+.knowledge-base-scope {
+    color: #4A9EFF;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    padding: 4px 8px;
+    background: rgba(74, 158, 255, 0.1);
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.knowledge-base-description {
+    color: #A0A0A0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Scrollbar styling */
+#knowledgeList QScrollBar:vertical {
+    width: 8px;
+    background: transparent;
+    margin: 0;
+}
+
+#knowledgeList QScrollBar::handle:vertical {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+#knowledgeList QScrollBar::handle:vertical:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+#knowledgeList QScrollBar::add-line:vertical,
+#knowledgeList QScrollBar::sub-line:vertical {
+    height: 0;
+    background: none;
+}
+
+#knowledgeList QScrollBar::add-page:vertical,
+#knowledgeList QScrollBar::sub-page:vertical {
+    background: none;
+}
+
+#refreshButton {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 6px;
+}
+
+#refreshButton:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+#refreshButton:pressed {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+#refreshButton QIcon {
+    color: #A0A0A0;
+} 
