@@ -4,11 +4,9 @@ Controlador principal da aplicação UCAN.
 
 import logging
 import os
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
-from uuid import UUID, uuid4
 
 from ucan.config.settings import settings
 from ucan.core.assistant import Assistant
@@ -17,8 +15,8 @@ from ucan.core.conversation_type import ConversationType
 from ucan.core.database import db
 from ucan.core.knowledge_base import KnowledgeBase
 from ucan.core.knowledge_manager import KnowledgeManager
-from ucan.core.llm_interface import LLMInterface, MockLLMInterface
-from ucan.core.message import Message
+from ucan.core.llm_interface import LLMInterface, get_llm_interface
+from ucan.core.models import Message
 from ucan.utils.file_watcher import FileWatcher
 
 logger = logging.getLogger(__name__)
@@ -43,76 +41,6 @@ class EventEmitter:
                 callback(*args, **kwargs)
 
 
-@dataclass
-class Message:
-    """Representa uma mensagem no chat."""
-
-    id: UUID
-    role: str
-    content: str
-    timestamp: datetime
-
-    @classmethod
-    def create(cls, role: str, content: str) -> "Message":
-        """
-        Cria uma nova mensagem.
-
-        Args:
-            role: Papel do remetente (user/assistant)
-            content: Conteúdo da mensagem
-
-        Returns:
-            Nova mensagem
-        """
-        return cls(id=uuid4(), role=role, content=content, timestamp=datetime.now())
-
-
-@dataclass
-class Conversation:
-    """Representa uma conversa."""
-
-    id: UUID
-    title: str
-    messages: List[Message]
-    type_id: Optional[str]
-    type_name: Optional[str]
-    meta_data: Optional[Dict]
-    created_at: datetime
-    updated_at: datetime
-
-    @classmethod
-    def create(
-        cls,
-        title: str,
-        type_id: Optional[str] = None,
-        type_name: Optional[str] = None,
-        meta_data: Optional[Dict] = None,
-    ) -> "Conversation":
-        """
-        Cria uma nova conversa.
-
-        Args:
-            title: Título da conversa
-            type_id: ID do tipo de conversa
-            type_name: Nome do tipo de conversa
-            meta_data: Metadados da conversa
-
-        Returns:
-            Nova conversa
-        """
-        now = datetime.now()
-        return cls(
-            id=uuid4(),
-            title=title,
-            messages=[],
-            type_id=type_id,
-            type_name=type_name,
-            meta_data=meta_data or {},
-            created_at=now,
-            updated_at=now,
-        )
-
-
 class AppController(EventEmitter):
     """Controlador principal da aplicação."""
 
@@ -124,7 +52,12 @@ class AppController(EventEmitter):
             language_model_interface: Interface com o modelo de linguagem
         """
         super().__init__()
-        self.llm = language_model_interface or MockLLMInterface()
+
+        # Se não foi fornecida uma interface, cria uma com base nas configurações
+        if not language_model_interface:
+            language_model_interface = get_llm_interface()
+
+        self.llm = language_model_interface
         self.assistant = Assistant(self.llm)
         self.current_conversation = None
         self.conversations = []
@@ -165,12 +98,20 @@ class AppController(EventEmitter):
             file_path: Caminho do arquivo modificado
         """
         logger.debug(f"Arquivo modificado: {file_path}")
+
+        # Se for um arquivo CSS, recarrega os estilos
+        if file_path.endswith((".css", ".qss")):
+            from ucan.ui.theme_manager import theme_manager
+
+            if theme_manager:
+                theme_manager._reload_current_theme()
+                logger.debug("Estilos recarregados após modificação")
+
         self.emit("hot_reload_requested")
 
     async def initialize(self) -> None:
         """Initialize the application controller."""
         logger.info("Iniciando controlador da aplicação...")
-        self._setup_hot_reload()
         # Carregar conversas iniciais
         self.refresh_conversation_list()
         # Se não houver conversa atual, criar uma nova
@@ -268,32 +209,40 @@ class AppController(EventEmitter):
         self.emit("conversation_created", conversation)
         return conversation
 
-    async def send_message(self, content: str) -> None:
+    async def send_message(self, message: str) -> None:
         """
         Envia uma mensagem para o assistente.
 
         Args:
-            content: Conteúdo da mensagem
+            message: Conteúdo da mensagem
         """
         if not self.current_conversation:
             raise RuntimeError("Nenhuma conversa selecionada")
 
-        user_message = self.current_conversation.messages[-1]
+        # Criar e adicionar mensagem do usuário
+        user_message = Message(content=message, role="user", meta_data={})
+        self.current_conversation.messages.append(user_message)
         self.emit("message_received", user_message)
 
         try:
-            response = await self.llm.generate_response(content)
-            assistant_message = Message.create("assistant", response)
+            # Gerar resposta do assistente
+            response = await self.llm.generate_response(message)
+            assistant_message = Message(
+                content=response, role="assistant", meta_data={}
+            )
             self.current_conversation.messages.append(assistant_message)
             self.emit("message_received", assistant_message)
         except Exception as e:
             logger.error("Erro ao gerar resposta: %s", e)
-            error_message = Message.create("system", f"Erro ao gerar resposta: {e}")
+            error_message = Message(
+                content=f"Erro ao gerar resposta: {e}", role="system", meta_data={}
+            )
             self.current_conversation.messages.append(error_message)
             self.emit("message_received", error_message)
 
         # Atualiza a conversa no banco
         self.current_conversation.updated_at = datetime.now()
+        self._save_conversation(self.current_conversation)
         self.emit("conversation_updated", self.current_conversation)
 
     def _save_conversation(self, conversation: Conversation) -> None:
@@ -304,9 +253,27 @@ class AppController(EventEmitter):
             conversation: Conversa a ser salva
         """
         try:
+            # Salva a conversa
             db.save_conversation(
-                conversation.id, conversation.title, conversation.messages[-1].metadata
+                conversation.id,
+                conversation.title,
+                conversation.messages[-1].content if conversation.messages else "",
             )
+
+            # Salva todas as mensagens da conversa
+            for message in conversation.messages:
+                if not hasattr(
+                    message, "_saved"
+                ):  # Evita salvar a mesma mensagem múltiplas vezes
+                    db.save_message(
+                        message.id,
+                        conversation.id,
+                        message.role,
+                        message.content,
+                        message.meta_data or {},
+                    )
+                    setattr(message, "_saved", True)
+
             self.emit("conversation_updated", conversation)
         except Exception as e:
             logger.error("Erro ao salvar conversa: %s", e)

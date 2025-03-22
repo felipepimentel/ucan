@@ -2,6 +2,7 @@
 Janela principal da aplicação.
 """
 
+import asyncio
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -271,14 +272,28 @@ class MainWindow(QMainWindow):
         """
         self.app_controller.search_conversations(query)
 
-    def _on_message_sent(self, message: str) -> None:
+    async def _send_message(self, message: str) -> None:
         """
-        Processa o envio de mensagem.
+        Envia uma mensagem de forma assíncrona.
 
         Args:
-            message: Mensagem enviada
+            message: Conteúdo da mensagem
         """
-        self.app_controller.send_message(message)
+        await self.app_controller.send_message(message)
+
+    def _on_message_sent(self, message: str) -> None:
+        """
+        Manipula o envio de uma mensagem.
+
+        Args:
+            message: Conteúdo da mensagem
+        """
+        if not message.strip():
+            return
+
+        # Cria uma task para enviar a mensagem de forma assíncrona
+        loop = asyncio.get_event_loop()
+        loop.create_task(self._send_message(message))
 
     def _on_file_upload(self) -> None:
         """Manipula o upload de arquivo."""

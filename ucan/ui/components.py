@@ -788,7 +788,6 @@ class ChatWidget(QWidget):
                 background-color: #FFFFFF;
                 border: 1px solid #E2E8F0;
                 border-radius: 12px;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
             }
         """)
         messages_layout = QVBoxLayout(messages_container)
@@ -828,7 +827,6 @@ class ChatWidget(QWidget):
             }
             #chatInputContainer:focus-within {
                 border-color: #2196F3;
-                box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
             }
         """)
         input_layout = QHBoxLayout(input_container)
@@ -950,7 +948,6 @@ class ChatWidget(QWidget):
         # Define o estilo do bloco
         format_block.setBackground(QColor("#EBF8FF") if is_user else QColor("#F8FAFC"))
         format_block.setProperty(QTextFormat.FrameMargin, 16)
-        format_block.setProperty(QTextFormat.FrameRadius, 16.0)
         cursor.insertBlock(format_block)
 
         # Insere o cabeçalho da mensagem

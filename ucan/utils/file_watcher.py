@@ -89,7 +89,7 @@ class FileWatcher(QObject):
     def watch_directory(
         self,
         directory: str | Path,
-        patterns: Set[str] = {".py", ".qss"},
+        patterns: Set[str] = {".py", ".qss", ".css"},
     ) -> None:
         """
         Adiciona um diretório para observação.
