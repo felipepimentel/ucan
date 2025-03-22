@@ -4,10 +4,11 @@ Controlador principal da aplicação UCAN.
 
 import logging
 import os
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
-
-from PySide6.QtCore import QObject, Signal
+from typing import Callable, Dict, List, Optional
+from uuid import UUID, uuid4
 
 from ucan.config.settings import settings
 from ucan.core.assistant import Assistant
@@ -23,26 +24,97 @@ from ucan.utils.file_watcher import FileWatcher
 logger = logging.getLogger(__name__)
 
 
-class AppController(QObject):
-    """Controlador principal da aplicação."""
+class EventEmitter:
+    """Simple event emitter implementation."""
 
-    message_received = Signal(Message)
-    hot_reload_requested = Signal()
-    initialization_failed = Signal(str)
-    conversation_created = Signal(Conversation)
-    conversation_deleted = Signal(str)
-    conversation_updated = Signal(Conversation)
-    conversations_loaded = Signal(list)
-    conversation_added = Signal(Conversation)
-    error_occurred = Signal(str)
-    status_message = Signal(str)
-    conversation_selected = Signal(Conversation)
-    conversations_updated = Signal(list)
-    message_sent = Signal(Message)
-    knowledge_base_created = Signal(KnowledgeBase)
-    knowledge_base_updated = Signal(KnowledgeBase)
-    knowledge_bases_updated = Signal(list)
-    conversation_type_created = Signal(ConversationType)
+    def __init__(self):
+        self._events = {}
+
+    def on(self, event: str, callback: Callable):
+        """Register an event callback."""
+        if event not in self._events:
+            self._events[event] = []
+        self._events[event].append(callback)
+
+    def emit(self, event: str, *args, **kwargs):
+        """Emit an event with arguments."""
+        if event in self._events:
+            for callback in self._events[event]:
+                callback(*args, **kwargs)
+
+
+@dataclass
+class Message:
+    """Representa uma mensagem no chat."""
+
+    id: UUID
+    role: str
+    content: str
+    timestamp: datetime
+
+    @classmethod
+    def create(cls, role: str, content: str) -> "Message":
+        """
+        Cria uma nova mensagem.
+
+        Args:
+            role: Papel do remetente (user/assistant)
+            content: Conteúdo da mensagem
+
+        Returns:
+            Nova mensagem
+        """
+        return cls(id=uuid4(), role=role, content=content, timestamp=datetime.now())
+
+
+@dataclass
+class Conversation:
+    """Representa uma conversa."""
+
+    id: UUID
+    title: str
+    messages: List[Message]
+    type_id: Optional[str]
+    type_name: Optional[str]
+    meta_data: Optional[Dict]
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def create(
+        cls,
+        title: str,
+        type_id: Optional[str] = None,
+        type_name: Optional[str] = None,
+        meta_data: Optional[Dict] = None,
+    ) -> "Conversation":
+        """
+        Cria uma nova conversa.
+
+        Args:
+            title: Título da conversa
+            type_id: ID do tipo de conversa
+            type_name: Nome do tipo de conversa
+            meta_data: Metadados da conversa
+
+        Returns:
+            Nova conversa
+        """
+        now = datetime.now()
+        return cls(
+            id=uuid4(),
+            title=title,
+            messages=[],
+            type_id=type_id,
+            type_name=type_name,
+            meta_data=meta_data or {},
+            created_at=now,
+            updated_at=now,
+        )
+
+
+class AppController(EventEmitter):
+    """Controlador principal da aplicação."""
 
     def __init__(self, language_model_interface: Optional[LLMInterface] = None) -> None:
         """
@@ -52,15 +124,13 @@ class AppController(QObject):
             language_model_interface: Interface com o modelo de linguagem
         """
         super().__init__()
-        self.llm = (
-            language_model_interface
-            if language_model_interface is not None
-            else MockLLMInterface()
-        )
-        self.current_conversation: Optional[Conversation] = None
-        self._file_watcher = None
-        self.assistant = Assistant()
+        self.llm = language_model_interface or MockLLMInterface()
+        self.assistant = Assistant(self.llm)
+        self.current_conversation = None
+        self.conversations = []
+        self.knowledge_manager = KnowledgeManager()
         self._setup_directories()
+        self._setup_hot_reload()
 
     def _setup_directories(self) -> None:
         """Configura os diretórios necessários."""
@@ -69,7 +139,7 @@ class AppController(QObject):
             os.makedirs(settings.LOG_DIR, exist_ok=True)
         except Exception as e:
             logger.error(f"Erro ao configurar diretórios: {e}")
-            self.initialization_failed.emit(str(e))
+            self.emit("initialization_failed", str(e))
 
     def _setup_hot_reload(self) -> None:
         """Set up the hot reload system."""
@@ -85,7 +155,7 @@ class AppController(QObject):
             logger.info("Sistema de hot reload configurado com sucesso")
         except Exception as e:
             logger.error(f"Erro ao configurar hot reload: {e}")
-            self.initialization_failed.emit(f"Erro ao configurar hot reload: {e}")
+            self.emit("initialization_failed", f"Erro ao configurar hot reload: {e}")
 
     def _on_file_changed(self, file_path: str) -> None:
         """
@@ -95,7 +165,7 @@ class AppController(QObject):
             file_path: Caminho do arquivo modificado
         """
         logger.debug(f"Arquivo modificado: {file_path}")
-        self.hot_reload_requested.emit()
+        self.emit("hot_reload_requested")
 
     async def initialize(self) -> None:
         """Initialize the application controller."""
@@ -107,7 +177,7 @@ class AppController(QObject):
         if not self.current_conversation:
             self.new_conversation()
 
-    def shutdown(self) -> None:
+    async def shutdown(self) -> None:
         """Clean shutdown of the application."""
         logger.info("Iniciando encerramento do controlador...")
 
@@ -128,15 +198,15 @@ class AppController(QObject):
 
         logger.info("Controlador encerrado com sucesso")
 
-    def __del__(self):
+    async def __del__(self):
         """Ensure cleanup on deletion."""
-        self.shutdown()
+        await self.shutdown()
 
     def refresh_conversation_list(self) -> None:
         """Atualiza a lista de conversas e emite o sinal conversations_loaded."""
         try:
             conversations = self.get_conversations()
-            self.conversations_loaded.emit(conversations)
+            self.emit("conversations_loaded", conversations)
         except Exception as e:
             logger.error(f"Erro ao atualizar lista de conversas: {e}")
 
@@ -147,9 +217,7 @@ class AppController(QObject):
         Returns:
             Lista de conversas
         """
-        conversations = Conversation.get_all()
-        self.conversations_updated.emit(conversations)
-        return conversations
+        return self.conversations
 
     def select_conversation(self, conversation: Conversation) -> None:
         """
@@ -159,7 +227,7 @@ class AppController(QObject):
             conversation: Conversa a ser selecionada
         """
         self.current_conversation = conversation
-        self.conversation_selected.emit(conversation)
+        self.emit("conversation_selected", conversation)
         self.get_conversation_knowledge_bases()
 
     def new_conversation(
@@ -169,18 +237,35 @@ class AppController(QObject):
         Cria uma nova conversa.
 
         Args:
-            title: Título da conversa (opcional)
-            type_id: ID do tipo de conversa (opcional)
+            title: Título da conversa
+            type_id: ID do tipo de conversa
 
         Returns:
             Nova conversa
         """
-        conversation = Conversation(
-            title=title or "Nova Conversa",
+        title = title or "Nova Conversa"
+        type_name = None
+        meta_data = {}
+
+        # Se um tipo foi especificado, buscar informações
+        if type_id:
+            conv_type = self.get_conversation_type(type_id)
+            if conv_type:
+                type_name = conv_type.name
+                meta_data = conv_type.meta_data or {}
+
+        # Criar nova conversa
+        conversation = Conversation.create(
+            title=title,
             type_id=type_id,
+            type_name=type_name,
+            meta_data=meta_data,
         )
-        self.select_conversation(conversation)
-        self.get_conversations()
+
+        # Adicionar à lista e selecionar
+        self.conversations.append(conversation)
+        self.current_conversation = conversation
+        self.emit("conversation_created", conversation)
         return conversation
 
     async def send_message(self, content: str) -> None:
@@ -193,25 +278,23 @@ class AppController(QObject):
         if not self.current_conversation:
             raise RuntimeError("Nenhuma conversa selecionada")
 
-        user_message = self.current_conversation.add_message("user", content)
-        self.message_received.emit(user_message)
+        user_message = self.current_conversation.messages[-1]
+        self.emit("message_received", user_message)
 
         try:
             response = await self.llm.generate_response(content)
-            assistant_message = self.current_conversation.add_message(
-                "assistant", response
-            )
-            self.message_received.emit(assistant_message)
+            assistant_message = Message.create("assistant", response)
+            self.current_conversation.messages.append(assistant_message)
+            self.emit("message_received", assistant_message)
         except Exception as e:
             logger.error("Erro ao gerar resposta: %s", e)
-            error_message = self.current_conversation.add_message(
-                "system", f"Erro ao gerar resposta: {e}"
-            )
-            self.message_received.emit(error_message)
+            error_message = Message.create("system", f"Erro ao gerar resposta: {e}")
+            self.current_conversation.messages.append(error_message)
+            self.emit("message_received", error_message)
 
         # Atualiza a conversa no banco
-        self.current_conversation.save()
-        self.conversation_updated.emit(self.current_conversation)
+        self.current_conversation.updated_at = datetime.now()
+        self.emit("conversation_updated", self.current_conversation)
 
     def _save_conversation(self, conversation: Conversation) -> None:
         """
@@ -222,9 +305,9 @@ class AppController(QObject):
         """
         try:
             db.save_conversation(
-                conversation.id, conversation.title, conversation.metadata
+                conversation.id, conversation.title, conversation.messages[-1].metadata
             )
-            self.conversation_updated.emit(conversation)
+            self.emit("conversation_updated", conversation)
         except Exception as e:
             logger.error("Erro ao salvar conversa: %s", e)
 
@@ -319,7 +402,7 @@ class AppController(QObject):
         conv_type = ConversationType(
             name=name, description=description, metadata=metadata
         )
-        self.conversation_type_created.emit(conv_type)
+        self.emit("conversation_type_created", conv_type)
         return conv_type
 
     def create_knowledge_base(
@@ -357,7 +440,7 @@ class AppController(QObject):
         else:
             return None
 
-        self.knowledge_base_created.emit(base)
+        self.emit("knowledge_base_created", base)
         return base
 
     def get_global_knowledge_bases(self) -> List[KnowledgeBase]:
@@ -368,7 +451,7 @@ class AppController(QObject):
             Lista de bases de conhecimento globais
         """
         bases = KnowledgeManager.get_global_bases()
-        self.knowledge_bases_updated.emit(bases)
+        self.emit("knowledge_bases_updated", bases)
         return bases
 
     def add_files_to_knowledge_base(
@@ -389,7 +472,7 @@ class AppController(QObject):
             Lista de IDs dos itens criados
         """
         item_ids = KnowledgeManager.add_files_to_base(base, files, metadata)
-        self.knowledge_base_updated.emit(base)
+        self.emit("knowledge_base_updated", base)
         return item_ids
 
     def add_directory_to_knowledge_base(
@@ -416,7 +499,7 @@ class AppController(QObject):
         item_ids = KnowledgeManager.add_directory_to_base(
             base, directory, pattern, recursive, metadata
         )
-        self.knowledge_base_updated.emit(base)
+        self.emit("knowledge_base_updated", base)
         return item_ids
 
     def get_conversation_knowledge_bases(self) -> List[KnowledgeBase]:
@@ -431,7 +514,7 @@ class AppController(QObject):
             return []
 
         bases = self.current_conversation.get_knowledge_bases()
-        self.knowledge_bases_updated.emit(bases)
+        self.emit("knowledge_bases_updated", bases)
         self.assistant.set_knowledge_bases(bases)
         return bases
 
@@ -455,5 +538,37 @@ class AppController(QObject):
         base = self.current_conversation.create_knowledge_base(
             name, description, metadata
         )
-        self.knowledge_base_created.emit(base)
+        self.emit("knowledge_base_created", base)
         return base
+
+    def _create_initial_conversation(self):
+        """Cria a conversa inicial."""
+        conversation = Conversation.create("Nova Conversa")
+        self.conversations.append(conversation)
+        self.current_conversation = conversation
+
+    def get_current_conversation(self) -> Optional[Conversation]:
+        """
+        Obtém a conversa atual.
+
+        Returns:
+            Conversa atual ou None se nenhuma selecionada
+        """
+        return self.current_conversation
+
+    def get_conversation_type(self, type_id: str) -> Optional[ConversationType]:
+        """
+        Obtém um tipo de conversa pelo ID.
+
+        Args:
+            type_id: ID do tipo de conversa
+
+        Returns:
+            Tipo de conversa ou None se não encontrado
+        """
+        try:
+            with db.get_session() as session:
+                return session.query(ConversationType).filter_by(id=type_id).first()
+        except Exception as e:
+            logger.error(f"Erro ao buscar tipo de conversa: {e}")
+            return None

@@ -5,6 +5,8 @@ Funções utilitárias gerais.
 import logging
 from pathlib import Path
 
+from ucan.config.constants import RESOURCES_DIR
+
 # Configure the logger
 logger = logging.getLogger(__name__)
 handler = logging.StreamHandler()
@@ -24,4 +26,9 @@ def get_file_path(file_name: str) -> Path:
     Returns:
         Caminho completo do arquivo
     """
-    return Path(file_name).resolve()
+    if isinstance(file_name, str):
+        path = Path(file_name)
+        if not path.is_absolute():
+            path = RESOURCES_DIR / path
+        return path.resolve()
+    return file_name.resolve()

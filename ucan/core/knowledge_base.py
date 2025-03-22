@@ -22,7 +22,7 @@ class KnowledgeBase:
         type_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
         id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> None:
         """
         Inicializa uma base de conhecimento.
@@ -34,14 +34,14 @@ class KnowledgeBase:
             type_id: ID do tipo de conversa (opcional)
             conversation_id: ID da conversa (opcional)
             id: ID da base (opcional)
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
         """
         self.name = name
         self.description = description
         self.scope = scope
         self.type_id = type_id
         self.conversation_id = conversation_id
-        self.metadata = metadata or {}
+        self.meta_data = meta_data or {}
         self.id = id
 
         if not self.id:
@@ -60,18 +60,18 @@ class KnowledgeBase:
             self.scope,
             self.type_id,
             self.conversation_id,
-            self.metadata,
+            self.meta_data,
         )
 
     def add_file(
-        self, file_path: Union[str, Path], metadata: Optional[Dict] = None
+        self, file_path: Union[str, Path], meta_data: Optional[Dict] = None
     ) -> str:
         """
         Adiciona um arquivo à base de conhecimento.
 
         Args:
             file_path: Caminho do arquivo
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             ID do item criado
@@ -86,7 +86,7 @@ class KnowledgeBase:
                 file_path.name,
                 file_path.suffix.lstrip("."),
                 content,
-                metadata=metadata,
+                meta_data=meta_data,
             )
         except Exception as e:
             logger.error(f"Erro ao adicionar arquivo {file_path}: {e}")
@@ -97,7 +97,7 @@ class KnowledgeBase:
         content: str,
         file_name: str,
         file_type: str,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> str:
         """
         Adiciona conteúdo diretamente à base de conhecimento.
@@ -106,7 +106,7 @@ class KnowledgeBase:
             content: Conteúdo a ser adicionado
             file_name: Nome do arquivo
             file_type: Tipo do arquivo
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             ID do item criado
@@ -117,7 +117,7 @@ class KnowledgeBase:
                 file_name,
                 file_type,
                 content,
-                metadata=metadata,
+                meta_data=meta_data,
             )
         except Exception as e:
             logger.error(f"Erro ao adicionar conteúdo: {e}")
@@ -162,7 +162,7 @@ class KnowledgeBase:
                 type_id=data["type_id"],
                 conversation_id=data["conversation_id"],
                 id=data["id"],
-                metadata=data["metadata"],
+                meta_data=data["meta_data"],
             )
             for data in bases_data
         ]

@@ -1,213 +1,157 @@
-from datetime import datetime
+from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
-    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
 )
 
-from ucan.config.constants import RESOURCES_DIR
-from ucan.core.app_controller import AppController
-from ucan.core.conversation import Conversation
+from ucan.ui.icons import load_icon
 
 
-class ConversationItem(QWidget):
-    """Widget para exibir uma conversa na lista."""
+class ConversationItem(QFrame):
+    """Item que representa uma conversa na lista."""
 
-    clicked = Signal(Conversation)
+    clicked = Signal(str)
 
-    def __init__(self, conversation: Conversation, parent=None):
+    def __init__(
+        self,
+        conversation_id: str,
+        title: str,
+        preview: str,
+        parent: Optional[QWidget] = None,
+    ):
+        """
+        Inicializa o item de conversa.
+
+        Args:
+            conversation_id: ID da conversa
+            title: Título da conversa
+            preview: Prévia da última mensagem
+            parent: Widget pai
+        """
         super().__init__(parent)
-        self.conversation = conversation
+        self.conversation_id = conversation_id
         self.setObjectName("conversationItem")
-        self._setup_ui()
-        self.setProperty("selected", False)
+        self.setFrameStyle(QFrame.StyledPanel)
+        self._setup_ui(title, preview)
 
-    def _setup_ui(self):
+    def _setup_ui(self, title: str, preview: str) -> None:
+        """
+        Configura a interface do item.
+
+        Args:
+            title: Título da conversa
+            preview: Prévia da última mensagem
+        """
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 8, 12, 8)
-        layout.setSpacing(4)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
 
-        # Header with title and time
-        header = QWidget()
-        header_layout = QHBoxLayout(header)
-        header_layout.setContentsMargins(0, 0, 0, 0)
-        header_layout.setSpacing(8)
+        # Cabeçalho com ícone e título
+        header = QHBoxLayout()
+        header.setSpacing(8)
 
-        # Title
-        title = QLabel(self.conversation.title or "Nova Conversa")
-        title.setObjectName("conversationItemTitle")
-        title.setWordWrap(True)
-        header_layout.addWidget(title, 1)  # Stretch factor 1
+        icon = QLabel()
+        icon.setPixmap(load_icon("chat.svg").pixmap(24, 24))
+        header.addWidget(icon)
 
-        # Time and badge in a container
-        info_container = QWidget()
-        info_layout = QHBoxLayout(info_container)
-        info_layout.setContentsMargins(0, 0, 0, 0)
-        info_layout.setSpacing(8)
+        title_label = QLabel(title)
+        title_label.setObjectName("conversationTitle")
+        header.addWidget(title_label)
+        header.addStretch()
 
-        # Time
-        updated_at = datetime.fromisoformat(self.conversation.updated_at)
-        time = QLabel(updated_at.strftime("%H:%M"))
-        time.setObjectName("conversationItemTime")
-        info_layout.addWidget(time)
+        layout.addLayout(header)
 
-        header_layout.addWidget(info_container)
-        layout.addWidget(header)
+        # Prévia da mensagem
+        if preview:
+            preview_label = QLabel(preview)
+            preview_label.setObjectName("conversationPreview")
+            preview_label.setWordWrap(True)
+            layout.addWidget(preview_label)
 
-        # Preview of last message
-        if self.conversation.messages:
-            last_message = self.conversation.messages[-1]
-            preview = QLabel(
-                last_message.content[:100] + "..."
-                if len(last_message.content) > 100
-                else last_message.content
-            )
-            preview.setObjectName("conversationItemPreview")
-            preview.setWordWrap(True)
-            preview.setMaximumHeight(36)  # Limit to roughly 2 lines
-            layout.addWidget(preview)
+    def mousePressEvent(self, event) -> None:
+        """
+        Manipula evento de clique.
 
-    def mousePressEvent(self, event):
+        Args:
+            event: Evento de mouse
+        """
+        super().mousePressEvent(event)
         if event.button() == Qt.LeftButton:
-            self.clicked.emit(self.conversation)
-
-    def setSelected(self, selected: bool):
-        self.setProperty("selected", selected)
-        self.style().unpolish(self)
-        self.style().polish(self)
+            self.clicked.emit(self.conversation_id)
 
 
 class ConversationList(QWidget):
-    """Widget de lista de conversas."""
+    """Lista de conversas disponíveis."""
 
-    conversation_selected = Signal(Conversation)
+    conversation_selected = Signal(str)
 
-    def __init__(self, controller: AppController, parent=None):
+    def __init__(self, parent: Optional[QWidget] = None):
+        """
+        Inicializa a lista de conversas.
+
+        Args:
+            parent: Widget pai
+        """
         super().__init__(parent)
-        self.controller = controller
         self.setObjectName("conversationList")
         self._setup_ui()
-        self._setup_signals()
 
-        self.controller.conversation_created.connect(self._add_conversation)
-        self.controller.conversation_updated.connect(self._update_conversation)
-        self.controller.conversation_deleted.connect(self._remove_conversation)
-
-        self._current_conversation = None
-
-    def _setup_ui(self):
+    def _setup_ui(self) -> None:
+        """Configura a interface da lista."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Header
-        header = QWidget()
-        header.setObjectName("conversationHeader")
-        header_layout = QVBoxLayout(header)
-        header_layout.setContentsMargins(16, 16, 16, 16)
-        header_layout.setSpacing(12)
+        # Área de rolagem para conversas
+        scroll = QScrollArea()
+        scroll.setObjectName("conversationsScroll")
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        # Title and New Button
-        title_layout = QHBoxLayout()
-        title_layout.setContentsMargins(0, 0, 0, 0)
-        title_layout.setSpacing(8)
+        # Container para conversas
+        self.conversations_container = QWidget()
+        self.conversations_container.setObjectName("conversationsContainer")
+        self.conversations_layout = QVBoxLayout(self.conversations_container)
+        self.conversations_layout.setContentsMargins(16, 16, 16, 16)
+        self.conversations_layout.setSpacing(16)
+        self.conversations_layout.addStretch()
 
-        title = QLabel("Conversas")
-        title.setObjectName("conversationTitle")
-        title_layout.addWidget(title)
+        scroll.setWidget(self.conversations_container)
+        layout.addWidget(scroll)
 
-        title_layout.addStretch()
+    def add_conversation(
+        self, conversation_id: str, title: str = "Nova Conversa", preview: str = ""
+    ) -> None:
+        """
+        Adiciona uma conversa à lista.
 
-        new_button = QPushButton()
-        new_button.setIcon(QIcon(str(RESOURCES_DIR / "icons" / "plus.svg")))
-        new_button.setToolTip("Nova Conversa (Ctrl+N)")
-        new_button.setFixedSize(36, 36)
-        new_button.setObjectName("newButton")
-        new_button.clicked.connect(self.controller.new_conversation)
-        title_layout.addWidget(new_button)
+        Args:
+            conversation_id: ID da conversa
+            title: Título da conversa
+            preview: Prévia da última mensagem
+        """
+        item = ConversationItem(conversation_id, title, preview)
+        item.clicked.connect(self.conversation_selected)
+        # Inserir antes do stretch
+        self.conversations_layout.insertWidget(
+            self.conversations_layout.count() - 1, item
+        )
 
-        header_layout.addLayout(title_layout)
+    def clear(self) -> None:
+        """Limpa todas as conversas da lista."""
+        while self.conversations_layout.count() > 1:  # Manter o stretch
+            item = self.conversations_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
 
-        # Search
-        search_layout = QHBoxLayout()
-        search_layout.setContentsMargins(0, 0, 0, 0)
-        search_layout.setSpacing(8)
-
-        search = QLineEdit()
-        search.setObjectName("conversationSearch")
-        search.setPlaceholderText("Pesquisar conversas...")
-        search.setFixedHeight(40)
-        search_layout.addWidget(search)
-
-        header_layout.addLayout(search_layout)
-
-        layout.addWidget(header)
-
-        # Scroll Area
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll_area.setObjectName("conversationScroll")
-
-        # Container for conversation items
-        self.conversation_container = QWidget()
-        self.conversation_container.setObjectName("conversationContainer")
-        self.conversation_layout = QVBoxLayout(self.conversation_container)
-        self.conversation_layout.setContentsMargins(8, 8, 8, 8)
-        self.conversation_layout.setSpacing(2)
-        self.conversation_layout.addStretch()
-
-        scroll_area.setWidget(self.conversation_container)
-        layout.addWidget(scroll_area)
-
-    def _setup_signals(self):
-        self.conversation_selected.connect(self.controller.select_conversation)
-
-    def _add_conversation(self, conversation: Conversation):
-        self.conversation_layout.takeAt(self.conversation_layout.count() - 1)
-        item = ConversationItem(conversation)
-        item.clicked.connect(self._on_conversation_clicked)
-        self.conversation_layout.addWidget(item)
-        self.conversation_layout.addStretch()
-
-    def _update_conversation(self, conversation: Conversation):
-        for i in range(self.conversation_layout.count()):
-            item = self.conversation_layout.itemAt(i).widget()
-            if (
-                isinstance(item, ConversationItem)
-                and item.conversation.id == conversation.id
-            ):
-                item.conversation = conversation
-                item.setSelected(
-                    conversation.id == self._current_conversation.id
-                    if self._current_conversation
-                    else False
-                )
-                break
-
-    def _remove_conversation(self, conversation_id: str):
-        for i in range(self.conversation_layout.count()):
-            item = self.conversation_layout.itemAt(i).widget()
-            if (
-                isinstance(item, ConversationItem)
-                and item.conversation.id == conversation_id
-            ):
-                self.conversation_layout.takeAt(i)
-                item.deleteLater()
-                break
-
-    def _on_conversation_clicked(self, conversation: Conversation):
-        self._current_conversation = conversation
-        for i in range(self.conversation_layout.count()):
-            item = self.conversation_layout.itemAt(i).widget()
-            if isinstance(item, ConversationItem):
-                item.setSelected(item.conversation.id == conversation.id)
-        self.conversation_selected.emit(conversation)
+    def _apply_theme(self):
+        """Método para compatibilidade com o _apply_theme chamado pelo MainWindow."""
+        # Atualiza os estilos se necessário - implementação básica
+        pass

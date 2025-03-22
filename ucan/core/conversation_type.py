@@ -20,7 +20,7 @@ class ConversationType:
         name: str,
         description: str,
         id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> None:
         """
         Inicializa um tipo de conversa.
@@ -29,11 +29,11 @@ class ConversationType:
             name: Nome do tipo
             description: Descrição do tipo
             id: ID do tipo (opcional)
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
         """
         self.name = name
         self.description = description
-        self.metadata = metadata or {}
+        self.meta_data = meta_data or {}
         self.id = id
 
         if not self.id:
@@ -49,7 +49,7 @@ class ConversationType:
         type_id = str(uuid.uuid4())
         db.conn.execute(
             """
-            INSERT INTO conversation_types (id, name, description, created_at, metadata)
+            INSERT INTO conversation_types (id, name, description, created_at, meta_data)
             VALUES (?, ?, ?, ?, ?)
             """,
             [
@@ -57,13 +57,13 @@ class ConversationType:
                 self.name,
                 self.description,
                 datetime.utcnow(),
-                json.dumps(self.metadata),
+                json.dumps(self.meta_data),
             ],
         )
         return type_id
 
     def create_knowledge_base(
-        self, name: str, description: str, metadata: Optional[Dict] = None
+        self, name: str, description: str, meta_data: Optional[Dict] = None
     ) -> KnowledgeBase:
         """
         Cria uma nova base de conhecimento para este tipo.
@@ -71,7 +71,7 @@ class ConversationType:
         Args:
             name: Nome da base
             description: Descrição da base
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Base de conhecimento criada
@@ -81,7 +81,7 @@ class ConversationType:
             description=description,
             scope="type",
             type_id=self.id,
-            metadata=metadata,
+            meta_data=meta_data,
         )
 
     def get_knowledge_bases(self) -> List[KnowledgeBase]:
@@ -103,7 +103,7 @@ class ConversationType:
         """
         results = db.conn.execute(
             """
-            SELECT id, name, description, metadata
+            SELECT id, name, description, meta_data
             FROM conversation_types
             ORDER BY name
             """
@@ -114,7 +114,7 @@ class ConversationType:
                 name=row[1],
                 description=row[2],
                 id=row[0],
-                metadata=json.loads(row[3]),
+                meta_data=json.loads(row[3]),
             )
             for row in results
         ]
@@ -132,7 +132,7 @@ class ConversationType:
         """
         result = db.conn.execute(
             """
-            SELECT id, name, description, metadata
+            SELECT id, name, description, meta_data
             FROM conversation_types
             WHERE id = ?
             """,
@@ -146,5 +146,5 @@ class ConversationType:
             name=result[1],
             description=result[2],
             id=result[0],
-            metadata=json.loads(result[3]),
+            meta_data=json.loads(result[3]),
         )

@@ -25,7 +25,7 @@ class Message:
         type: MessageType,
         timestamp: Optional[datetime] = None,
         message_id: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ):
         """
         Inicializa uma mensagem.
@@ -35,13 +35,13 @@ class Message:
             type: Tipo da mensagem (user, assistant, system)
             timestamp: Data/hora da mensagem (opcional)
             message_id: ID da mensagem (opcional)
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
         """
         self.content = content
         self.type = type
         self.timestamp = timestamp or datetime.utcnow()
         self.id = message_id or str(uuid.uuid4())
-        self.metadata = metadata or {}
+        self.meta_data = meta_data or {}
 
     def to_dict(self) -> Dict:
         """
@@ -55,7 +55,7 @@ class Message:
             "content": self.content,
             "type": self.type.value,
             "timestamp": self.timestamp.isoformat(),
-            "metadata": self.metadata,
+            "meta_data": self.meta_data,
         }
 
     @classmethod
@@ -74,5 +74,5 @@ class Message:
             type=MessageType(data["type"]),
             timestamp=datetime.fromisoformat(data["timestamp"]),
             message_id=data["id"],
-            metadata=data.get("metadata", {}),
+            meta_data=data.get("meta_data", {}),
         )

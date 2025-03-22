@@ -1,15 +1,14 @@
-# UCAN - Universal Conversational Assistant Network
+# UCAN - Um Assistente de IA Conversacional
 
-UCAN é uma aplicação desktop moderna para interação com modelos de linguagem de última geração.
+UCAN é um assistente de IA conversacional para ajudar em tarefas de programação, construído com Python e Dear PyGui.
 
 ## Características
 
-- Interface gráfica moderna e intuitiva
-- Suporte a múltiplos modelos de linguagem
-- Gerenciamento de conversas
-- Exportação e importação de conversas
-- Temas claro e escuro
-- Hot reload para desenvolvimento
+- Interface moderna e responsiva
+- Temas personalizáveis
+- Suporte a múltiplas conversas
+- Bases de conhecimento integradas
+- Integração com modelos de IA
 
 ## Requisitos
 
@@ -24,49 +23,62 @@ git clone https://github.com/seu-usuario/ucan.git
 cd ucan
 ```
 
-2. Instale as dependências usando Poetry:
+2. Instale as dependências com Poetry:
 ```bash
 poetry install
 ```
 
 ## Uso
 
-Execute a aplicação:
+1. Inicie a aplicação:
 ```bash
-poetry run python -m ucan
+poetry run ucan
+```
+
+2. Ou execute o exemplo:
+```bash
+poetry run python examples/chat_app.py
 ```
 
 ## Desenvolvimento
-
-### Configuração do Ambiente
 
 1. Instale as dependências de desenvolvimento:
 ```bash
 poetry install --with dev
 ```
 
-2. Configure o pre-commit:
-```bash
-poetry run pre-commit install
-```
-
-### Comandos Úteis
-
-- Formatar código:
-```bash
-poetry run black ucan
-poetry run isort ucan
-```
-
-- Verificar tipos:
-```bash
-poetry run mypy ucan
-```
-
-- Executar testes:
+2. Execute os testes:
 ```bash
 poetry run pytest
 ```
+
+3. Verifique a qualidade do código:
+```bash
+poetry run black .
+poetry run isort .
+poetry run mypy .
+poetry run pylint ucan
+```
+
+## Estrutura do Projeto
+
+```
+ucan/
+├── config/           # Configurações
+├── core/            # Lógica principal
+├── ui/              # Interface do usuário
+├── examples/        # Exemplos de uso
+├── tests/           # Testes
+└── resources/       # Recursos (ícones, temas, etc.)
+```
+
+## Contribuindo
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
+3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
+4. Push para a branch (`git push origin feature/nova-feature`)
+5. Crie um Pull Request
 
 ## Licença
 

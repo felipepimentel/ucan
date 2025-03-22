@@ -12,6 +12,8 @@ from typing import Dict, List, Optional
 
 from PySide6.QtCore import QFileSystemWatcher, QObject, QTimer, Signal
 
+from ucan.config.constants import RESOURCES_DIR
+
 
 @dataclass
 class Theme:
@@ -140,16 +142,19 @@ class Theme:
 class ThemeManager(QObject):
     """Manages themes for the application."""
 
-    theme_changed = Signal(Theme)
-    css_file_changed = Signal()
+    theme_changed = Signal()
 
     def __init__(self):
         """Initialize the theme manager."""
         super().__init__()
         self._themes: Dict[str, Theme] = {}
         self._current_theme: Optional[Theme] = None
-        self._themes_dir = Path("ucan/data/themes")
-        self._styles_dir = Path("ucan/ui/styles")
+        self._themes_dir = RESOURCES_DIR / "themes"
+        self._styles_dir = RESOURCES_DIR / "styles"
+
+        # Garantir que os diretórios existam
+        self._themes_dir.mkdir(parents=True, exist_ok=True)
+        self._styles_dir.mkdir(parents=True, exist_ok=True)
 
         # Configurar watcher para arquivos CSS
         self._file_watcher = QFileSystemWatcher(self)
@@ -176,18 +181,24 @@ class ThemeManager(QObject):
 
     def _watch_css_files(self):
         """Adiciona arquivos CSS ao watcher."""
-        css_files = list(self._styles_dir.glob("**/*.css"))
+        css_files = [
+            self._styles_dir / "main.css",
+            self._styles_dir / "chat.css",
+            self._styles_dir / "knowledge.qss",
+        ]
+
         for css_file in css_files:
-            absolute_path = str(css_file.absolute())
-            print(f"Watching CSS file: {absolute_path}")
-            self._file_watcher.addPath(absolute_path)
+            if css_file.exists():
+                absolute_path = str(css_file.absolute())
+                print(f"Watching CSS file: {absolute_path}")
+                self._file_watcher.addPath(absolute_path)
 
     def _on_css_file_changed(self, path):
         """Chamado quando um arquivo CSS é modificado."""
         print(f"CSS file changed: {path}")
         # Re-adiciona o arquivo ao watcher (necessário em alguns sistemas)
-        if os.path.exists(path):  # Verifica se o arquivo ainda existe
-            if self._file_watcher.files():
+        if os.path.exists(path):
+            if path in self._file_watcher.files():
                 self._file_watcher.removePath(path)
             self._file_watcher.addPath(path)
 
@@ -195,24 +206,37 @@ class ThemeManager(QObject):
         self._reload_timer.start(100)  # 100ms debounce
 
     def _reload_current_theme(self):
-        """Recarrega o tema atual após alterações no CSS."""
-        if self._current_theme and self._current_theme.css_path:
-            print(
-                f"Reloading current theme: {self._current_theme.name} with CSS file: {self._current_theme.css_path}"
-            )
-
-            # Forçar a leitura do arquivo CSS novamente
-            if os.path.exists(self._current_theme.css_path):
-                with open(self._current_theme.css_path, "r", encoding="utf-8") as file:
-                    css_content = file.read()
-                    print(f"Successfully read {len(css_content)} bytes from CSS file")
-
-            # Emitir os sinais para atualizar a UI
-            self.theme_changed.emit(self._current_theme)
-            self.css_file_changed.emit()
+        """Recarrega o tema atual."""
+        if self._current_theme:
+            current_theme_id = self._current_theme.id
+            self._load_builtin_themes()
+            if current_theme_id in self._themes:
+                self._current_theme = self._themes[current_theme_id]
+                self.theme_changed.emit()
 
     def _load_builtin_themes(self):
         """Carrega os temas embutidos."""
+        # Garante que os diretórios existam
+        self._themes_dir.mkdir(parents=True, exist_ok=True)
+        self._styles_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copia os arquivos CSS do pacote se necessário
+        package_styles = Path(__file__).parent.parent / "ui" / "styles"
+        if package_styles.exists():
+            import shutil
+
+            # Corrige o padrão de glob que pode não funcionar em alguns sistemas
+            for style_file in list(package_styles.glob("*.css")) + list(
+                package_styles.glob("*.qss")
+            ):
+                target = self._styles_dir / style_file.name
+                if not target.exists():
+                    try:
+                        shutil.copy2(style_file, target)
+                        print(f"Copiado arquivo de estilo: {style_file} -> {target}")
+                    except Exception as e:
+                        print(f"Erro ao copiar arquivo de estilo {style_file}: {e}")
+
         dark_theme = Theme(
             id="dark",
             name="Dark",
@@ -236,7 +260,6 @@ class ThemeManager(QObject):
                 "selection_foreground": "#FFFFFF",
                 "hover_background": "#3A3A3A",
             },
-            css_path=str(RESOURCES_DIR / "themes/dark.qss"),
             metadata={
                 "author": "UCAN Team",
                 "version": "1.0",
@@ -246,21 +269,42 @@ class ThemeManager(QObject):
 
         # Carrega os arquivos CSS adicionais
         css_files = [
-            RESOURCES_DIR / "themes/dark.qss",
-            RESOURCES_DIR / "styles/knowledge.qss",  # Novo arquivo de estilo
+            self._styles_dir / "main.css",
+            self._styles_dir / "chat.css",
+            self._styles_dir / "knowledge.qss",
         ]
 
         # Combina todos os arquivos CSS em um único stylesheet
-        combined_css = ""
+        combined_css = []
+        
+        # Primeiro adiciona o CSS base do tema
+        combined_css.append(dark_theme.generate_stylesheet())
+        
+        # Depois adiciona os arquivos CSS personalizados
         for css_file in css_files:
             if css_file.exists():
-                with open(css_file, "r", encoding="utf-8") as f:
-                    combined_css += f.read() + "\n"
+                try:
+                    with open(css_file, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        if content:  # Só adiciona se não estiver vazio
+                            if css_file.suffix == '.qss':
+                                # Wrap QSS files to ensure they're properly applied
+                                content = f"/* Begin {css_file.name} */\n{content}\n/* End {css_file.name} */"
+                            combined_css.append(content)
+                            print(f"Carregado arquivo de estilo: {css_file} ({len(content)} bytes)")
+                except Exception as e:
+                    print(f"Erro ao carregar arquivo CSS {css_file}: {e}")
 
         # Cria um arquivo temporário com o CSS combinado
-        temp_css_path = RESOURCES_DIR / "themes/dark_combined.qss"
-        with open(temp_css_path, "w", encoding="utf-8") as f:
-            f.write(combined_css)
+        temp_css_path = self._styles_dir / "dark_combined.css"
+        temp_css_path.parent.mkdir(parents=True, exist_ok=True)
+
+        try:
+            with open(temp_css_path, "w", encoding="utf-8") as f:
+                f.write("\n\n".join(combined_css))
+            print(f"CSS combinado salvo em: {temp_css_path}")
+        except Exception as e:
+            print(f"Erro ao salvar CSS combinado: {e}")
 
         # Atualiza o caminho do CSS no tema
         dark_theme.css_path = str(temp_css_path)
@@ -268,56 +312,13 @@ class ThemeManager(QObject):
         self._themes["dark"] = dark_theme
         self._current_theme = dark_theme
 
-        light_theme = Theme(
-            id="light",
-            name="Light Theme",
-            colors={
-                "background": "#ffffff",
-                "foreground": "#000000",
-                "secondary_background": "#f0f0f0",
-                "accent": "#7B68EE",
-                "button_background": "#7B68EE",
-                "button_foreground": "#ffffff",
-                "button_hover_background": "#9370DB",
-                "button_active_background": "#6A5ACD",
-                "input_background": "#ffffff",
-                "input_foreground": "#000000",
-                "hover_background": "rgba(123, 104, 238, 0.12)",
-                "selection_background": "rgba(123, 104, 238, 0.20)",
-                "selection_foreground": "#000000",
-                "border": "#cccccc",
-            },
-            is_dark=False,
-        )
-
-        high_contrast = Theme(
-            id="high_contrast",
-            name="High Contrast",
-            colors={
-                "background": "#000000",
-                "foreground": "#ffffff",
-                "secondary_background": "#0a0a0a",
-                "accent": "#ffffff",
-                "button_background": "#000000",
-                "button_foreground": "#ffffff",
-                "button_hover_background": "#333333",
-                "button_active_background": "#555555",
-                "input_background": "#000000",
-                "input_foreground": "#ffffff",
-                "hover_background": "#333333",
-                "selection_background": "#ffffff",
-                "selection_foreground": "#000000",
-                "border": "#ffffff",
-            },
-            is_dark=True,
-            is_high_contrast=True,
-        )
-
-        self._themes.update({
-            "dark": dark_theme,
-            "light": light_theme,
-            "high_contrast": high_contrast,
-        })
+        # Configura o watcher para os arquivos CSS
+        for css_file in css_files:
+            if css_file.exists():
+                absolute_path = str(css_file.absolute())
+                print(f"Watching CSS file: {absolute_path}")
+                if absolute_path not in self._file_watcher.files():
+                    self._file_watcher.addPath(absolute_path)
 
     def _load_custom_themes(self):
         """Load custom themes from disk."""
@@ -346,7 +347,7 @@ class ThemeManager(QObject):
         theme = self.get_theme(theme_id)
         if theme:
             self._current_theme = theme
-            self.theme_changed.emit(theme)
+            self.theme_changed.emit()
             return True
         return False
 

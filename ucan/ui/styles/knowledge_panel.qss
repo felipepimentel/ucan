@@ -1,0 +1,83 @@
+/* Painel de conhecimento */
+#knowledgePanel {
+    background-color: #1e1e1e;
+    border-left: 1px solid #333333;
+}
+
+/* Área de ações */
+#kbActions {
+    background-color: #252526;
+    border-bottom: 1px solid #333333;
+}
+
+#kbActions QPushButton {
+    padding: 6px 12px;
+    border: 1px solid #454545;
+    border-radius: 4px;
+    background-color: #2d2d2d;
+    color: #cccccc;
+}
+
+#kbActions QPushButton:hover {
+    background-color: #3d3d3d;
+    border-color: #565656;
+}
+
+#kbActions QPushButton:pressed {
+    background-color: #404040;
+}
+
+/* Área de rolagem */
+#kbScroll {
+    border: none;
+    background-color: transparent;
+}
+
+#kbScroll QScrollBar:vertical {
+    width: 8px;
+    background: transparent;
+}
+
+#kbScroll QScrollBar::handle:vertical {
+    background: #4a4a4a;
+    border-radius: 4px;
+    min-height: 30px;
+}
+
+#kbScroll QScrollBar::handle:vertical:hover {
+    background: #555555;
+}
+
+#kbScroll QScrollBar::add-line:vertical,
+#kbScroll QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+/* Container de bases */
+#kbContainer {
+    background-color: transparent;
+}
+
+/* Item de base de conhecimento */
+#knowledgeBaseItem {
+    background-color: #252526;
+    border: 1px solid #333333;
+    border-radius: 6px;
+}
+
+#knowledgeBaseItem:hover {
+    background-color: #2d2d2d;
+    border-color: #454545;
+}
+
+#knowledgeBaseItem #kbName {
+    font-size: 14px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+#knowledgeBaseItem #kbDescription {
+    font-size: 12px;
+    color: #999999;
+    line-height: 1.4;
+} 

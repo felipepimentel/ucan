@@ -16,7 +16,7 @@ class KnowledgeManager:
 
     @classmethod
     def create_global_base(
-        cls, name: str, description: str, metadata: Optional[Dict] = None
+        cls, name: str, description: str, meta_data: Optional[Dict] = None
     ) -> KnowledgeBase:
         """
         Cria uma nova base de conhecimento global.
@@ -24,7 +24,7 @@ class KnowledgeManager:
         Args:
             name: Nome da base
             description: Descrição da base
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Base de conhecimento criada
@@ -33,7 +33,7 @@ class KnowledgeManager:
             name=name,
             description=description,
             scope="global",
-            metadata=metadata,
+            meta_data=meta_data,
         )
 
     @classmethod
@@ -51,7 +51,7 @@ class KnowledgeManager:
         cls,
         base: KnowledgeBase,
         files: List[Path],
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> List[str]:
         """
         Adiciona múltiplos arquivos a uma base de conhecimento.
@@ -59,7 +59,7 @@ class KnowledgeManager:
         Args:
             base: Base de conhecimento
             files: Lista de caminhos de arquivos
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Lista de IDs dos itens criados
@@ -67,7 +67,7 @@ class KnowledgeManager:
         item_ids = []
         for file_path in files:
             try:
-                item_id = base.add_file(file_path, metadata)
+                item_id = base.add_file(file_path, meta_data=meta_data)
                 item_ids.append(item_id)
             except Exception as e:
                 logger.error(f"Erro ao adicionar arquivo {file_path}: {e}")
@@ -80,7 +80,7 @@ class KnowledgeManager:
         directory: Path,
         pattern: str = "*",
         recursive: bool = True,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> List[str]:
         """
         Adiciona todos os arquivos de um diretório a uma base de conhecimento.
@@ -90,7 +90,7 @@ class KnowledgeManager:
             directory: Caminho do diretório
             pattern: Padrão para filtrar arquivos (ex: "*.txt")
             recursive: Se deve incluir subdiretórios
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Lista de IDs dos itens criados
@@ -104,7 +104,7 @@ class KnowledgeManager:
         else:
             files = list(directory.glob(pattern))
 
-        return cls.add_files_to_base(base, files, metadata)
+        return cls.add_files_to_base(base, files, meta_data)
 
     @classmethod
     def get_knowledge_items(

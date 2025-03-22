@@ -26,7 +26,7 @@ class Conversation:
         type_id: Optional[str] = None,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> None:
         """
         Inicializa uma nova conversa.
@@ -37,14 +37,14 @@ class Conversation:
             type_id: ID do tipo da conversa (opcional)
             created_at: Data de criação (opcional)
             updated_at: Data de atualização (opcional)
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
         """
         self.id = id or str(uuid.uuid4())
         self.title = title or "Nova Conversa"
         self.type_id = type_id
         self.created_at = created_at or datetime.utcnow().isoformat()
         self.updated_at = updated_at or self.created_at
-        self.metadata = metadata or {}
+        self.meta_data = meta_data or {}
         self.messages: List[Message] = []
 
         # Se um ID foi fornecido, tenta carregar do banco
@@ -61,7 +61,7 @@ class Conversation:
                 self.type_id = conversation_data.get("type_id")
                 self.created_at = conversation_data["created_at"].isoformat()
                 self.updated_at = conversation_data["updated_at"].isoformat()
-                self.metadata = conversation_data["metadata"]
+                self.meta_data = conversation_data["meta_data"]
 
                 # Carrega mensagens
                 messages_data = db.get_messages(self.id)
@@ -73,7 +73,7 @@ class Conversation:
                             role=msg["role"],
                             content=msg["content"],
                             created_at=msg["created_at"].isoformat(),
-                            metadata=msg["metadata"],
+                            meta_data=msg["meta_data"],
                         )
                     )
         except Exception as e:
@@ -85,7 +85,7 @@ class Conversation:
         content: str,
         id: Optional[str] = None,
         created_at: Optional[str] = None,
-        metadata: Optional[Dict] = None,
+        meta_data: Optional[Dict] = None,
     ) -> Message:
         """
         Adiciona uma mensagem à conversa.
@@ -95,7 +95,7 @@ class Conversation:
             content: Conteúdo da mensagem
             id: ID da mensagem (opcional)
             created_at: Data de criação (opcional)
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Mensagem adicionada
@@ -105,7 +105,7 @@ class Conversation:
             role=role,
             content=content,
             created_at=created_at or datetime.utcnow().isoformat(),
-            metadata=metadata or {},
+            meta_data=meta_data or {},
         )
         self.messages.append(message)
         self.updated_at = datetime.utcnow().isoformat()
@@ -117,7 +117,7 @@ class Conversation:
                 self.id,
                 message.role,
                 message.content,
-                message.metadata,
+                message.meta_data,
             )
         except Exception as e:
             logger.error(f"Erro ao salvar mensagem no banco: {e}")
@@ -132,7 +132,7 @@ class Conversation:
             True se a operação foi bem sucedida, False caso contrário
         """
         try:
-            db.save_conversation(self.id, self.title, self.metadata)
+            db.save_conversation(self.id, self.title, self.meta_data)
             return True
         except Exception as e:
             logger.error(f"Erro ao salvar conversa no banco: {e}")
@@ -160,7 +160,7 @@ class Conversation:
         return bases
 
     def create_knowledge_base(
-        self, name: str, description: str, metadata: Optional[Dict] = None
+        self, name: str, description: str, meta_data: Optional[Dict] = None
     ) -> KnowledgeBase:
         """
         Cria uma nova base de conhecimento para esta conversa.
@@ -168,7 +168,7 @@ class Conversation:
         Args:
             name: Nome da base
             description: Descrição da base
-            metadata: Metadados adicionais (opcional)
+            meta_data: Metadados adicionais (opcional)
 
         Returns:
             Base de conhecimento criada
@@ -178,7 +178,7 @@ class Conversation:
             description=description,
             scope="conversation",
             conversation_id=self.id,
-            metadata=metadata,
+            meta_data=meta_data,
         )
 
     def to_dict(self) -> Dict:
@@ -194,7 +194,7 @@ class Conversation:
             "type_id": self.type_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "metadata": self.metadata,
+            "meta_data": self.meta_data,
             "messages": [message.to_dict() for message in self.messages],
         }
 
@@ -237,7 +237,7 @@ class Conversation:
                 type_id=data.get("type_id"),
                 created_at=data.get("created_at"),
                 updated_at=data.get("updated_at"),
-                metadata=data.get("metadata", {}),
+                meta_data=data.get("meta_data", {}),
             )
 
             for message_data in data.get("messages", []):
@@ -246,7 +246,7 @@ class Conversation:
                     content=message_data["content"],
                     id=message_data.get("id"),
                     created_at=message_data.get("created_at"),
-                    metadata=message_data.get("metadata", {}),
+                    meta_data=message_data.get("meta_data", {}),
                 )
 
             return conversation
@@ -282,7 +282,7 @@ class Conversation:
         try:
             results = db.conn.execute(
                 """
-                SELECT id, title, type_id, created_at, updated_at, metadata
+                SELECT id, title, type_id, created_at, updated_at, meta_data
                 FROM conversations
                 ORDER BY updated_at DESC
                 """
@@ -295,7 +295,7 @@ class Conversation:
                     type_id=row[2],
                     created_at=row[3].isoformat(),
                     updated_at=row[4].isoformat(),
-                    metadata=json.loads(row[5]),
+                    meta_data=json.loads(row[5]),
                 )
                 for row in results
             ]

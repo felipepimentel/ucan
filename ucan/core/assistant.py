@@ -14,9 +14,15 @@ logger = logging.getLogger(__name__)
 class Assistant:
     """Assistente de chat."""
 
-    def __init__(self):
-        """Inicializa o assistente."""
+    def __init__(self, llm_interface=None):
+        """
+        Inicializa o assistente.
+
+        Args:
+            llm_interface: Interface com o modelo de linguagem (opcional)
+        """
         self._knowledge_bases: List[KnowledgeBase] = []
+        self.llm = llm_interface
 
     def set_knowledge_bases(self, bases: List[KnowledgeBase]):
         """

@@ -1,17 +1,43 @@
 """
-Constantes da aplicação.
+Constantes de configuração da aplicação.
 """
 
 import os
 from pathlib import Path
 from typing import List
 
-# Diretórios
-ROOT_DIR = Path(__file__).parent.parent
-BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-RESOURCES_DIR = BASE_DIR / "resources"
-ICONS_DIR = RESOURCES_DIR / "icons"
+# Diretórios base
+ROOT_DIR = Path(__file__).parent.parent.parent
 CONFIG_DIR = ROOT_DIR / "config"
+RESOURCES_DIR = ROOT_DIR / "resources"
+
+# Configurações de tema
+DEFAULT_THEME = {
+    "window_bg": (26, 27, 38),
+    "text": (192, 202, 245),
+    "border": (42, 43, 54),
+    "button": (65, 72, 104),
+    "button_hovered": (86, 95, 137),
+    "button_active": (122, 162, 247),
+    "accent": (122, 162, 247),
+}
+
+# Configurações de interface
+WINDOW_WIDTH = 1280
+WINDOW_HEIGHT = 720
+SIDEBAR_WIDTH = 300
+INPUT_HEIGHT = 80
+
+# Configurações de chat
+MAX_MESSAGES = 1000
+MESSAGE_WRAP_WIDTH = 400
+
+# Configurações de banco de dados
+DATABASE_URL = "sqlite:///" + str(ROOT_DIR / "data" / "database.duckdb")
+
+# Diretórios
+BASE_DIR = Path(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+ICONS_DIR = RESOURCES_DIR / "icons"
 
 # Garante que os diretórios existem
 RESOURCES_DIR.mkdir(parents=True, exist_ok=True)
@@ -43,8 +69,6 @@ WINDOW_DEFAULT_WIDTH = 1200
 WINDOW_DEFAULT_HEIGHT = 800
 
 # Configurações de interface
-WINDOW_WIDTH: int = 1200
-WINDOW_HEIGHT: int = 800
 WINDOW_MIN_WIDTH: int = 800
 WINDOW_MIN_HEIGHT: int = 600
 WINDOW_TITLE: str = "UCAN - Universal Chat Assistant Network"
@@ -57,7 +81,6 @@ CHAT_WIDTH: int = 800
 CHAT_HEIGHT: int = 600
 CHAT_MIN_WIDTH: int = 400
 CHAT_MIN_HEIGHT: int = 300
-SIDEBAR_WIDTH: int = 300
 
 # Modelos de IA disponíveis
 AI_MODELS: List[str] = [

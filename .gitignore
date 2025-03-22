@@ -7,10 +7,44 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-.Python
-build/
-develop-eggs/
 dist/
+build/
+*.egg-info/
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Logs
+*.log
+
+# Local development
+.python-version
+poetry.lock
+
+# Project specific
+config/*.yaml
+!config/default.yaml
+resources/styles/*_combined.css
+
+# Distribution / packaging
+.Python
+develop-eggs/
 downloads/
 eggs/
 .eggs/
@@ -21,7 +55,6 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
@@ -37,10 +70,8 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Unit test / coverage reports
-htmlcov/
 .tox/
 .nox/
-.coverage
 .coverage.*
 .cache
 nosetests.xml
@@ -48,7 +79,6 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
-.pytest_cache/
 cover/
 
 # Translations
@@ -56,8 +86,6 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
-local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
@@ -128,11 +156,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
 env.bak/
 venv.bak/
 
@@ -147,9 +170,7 @@ venv.bak/
 /site
 
 # mypy
-.mypy_cache/
 .dmypy.json
-dmypy.json
 
 # Pyre type checker
 .pyre/
@@ -178,25 +199,14 @@ cython_debug/
 logs
 conversations
 
-# Virtual Environment
-venv/
-env/
-ENV/
-
 # IDE
-.idea/
-.vscode/
 *.swp
 *.swo
 *~
 
 # UCAN specific
-.env
 ~/.ucan/
 .ucan/
-logs/
-cache/
-conversations/
 *.duckdb
 *.duckdb.wal
 
