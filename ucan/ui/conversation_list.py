@@ -102,6 +102,12 @@ class ConversationList(QWidget):
         self.setObjectName("conversationList")
         self._setup_ui()
 
+        # Configura o tema
+        from ucan.ui.theme_manager import theme_manager
+
+        theme_manager.theme_changed.connect(self._apply_theme)
+        self._apply_theme()
+
     def _setup_ui(self) -> None:
         """Configura a interface da lista."""
         layout = QVBoxLayout(self)
@@ -152,6 +158,10 @@ class ConversationList(QWidget):
                 item.widget().deleteLater()
 
     def _apply_theme(self):
-        """Método para compatibilidade com o _apply_theme chamado pelo MainWindow."""
-        # Atualiza os estilos se necessário - implementação básica
-        pass
+        """Aplica o tema atual."""
+        from ucan.ui.theme_manager import theme_manager
+
+        if theme := theme_manager.current_theme:
+            self.setStyleSheet(theme.generate_stylesheet())
+            # Atualiza também os componentes filhos importantes
+            self.conversations_layout.setStyleSheet(theme.generate_stylesheet())

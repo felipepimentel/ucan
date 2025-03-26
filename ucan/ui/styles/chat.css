@@ -1,32 +1,48 @@
 /* Base Theme Variables */
 :root {
-    /* Colors */
-    --primary: #7B68EE;
-    --primary-light: #8A77FD;
-    --primary-dark: #6152DA;
-    --bg-dark: #1A1D26;
-    --bg-darker: #151820;
-    --bg-light: #20232D;
-    --text-primary: #E4E6EB;
-    --text-secondary: #A5ADCB;
-    --text-muted: #8A92A9;
-    --border-color: rgba(123, 104, 238, 0.2);
+    /* Brand Colors */
+    --brand-50: #F0F9FF;
+    --brand-100: #E0F2FE;
+    --brand-200: #BAE6FD;
+    --brand-300: #7DD3FC;
+    --brand-400: #38BDF8;
+    --brand-500: #0EA5E9;
+    --brand-600: #0284C7;
+    --brand-700: #0369A1;
+    --brand-800: #075985;
+    --brand-900: #0C4A6E;
+
+    /* Gray Scale */
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+
+    /* Semantic Colors */
+    --background: var(--gray-100);
+    --surface: #FFFFFF;
+    --surface-hover: var(--gray-50);
+    --surface-active: var(--gray-100);
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    --gradient-hover: linear-gradient(135deg, var(--primary-light), var(--primary));
-    --gradient-bg: linear-gradient(145deg, rgba(32, 35, 45, 0.7), rgba(38, 41, 55, 0.7));
-    --gradient-message: linear-gradient(135deg, rgba(123, 104, 238, 0.16), rgba(123, 104, 238, 0.22));
+    --border: var(--gray-200);
+    --border-hover: var(--gray-300);
+    --border-active: var(--gray-400);
     
-    /* Animations */
-    --animation-duration-fast: 200ms;
-    --animation-duration-normal: 300ms;
-    --animation-duration-slow: 500ms;
-    --animation-timing: cubic-bezier(0.4, 0, 0.2, 1);
-    
-    /* Effects */
-    --blur-amount: 10px;
-    --glow-amount: 20px;
+    --text: var(--gray-900);
+    --text-secondary: var(--gray-700);
+    --text-tertiary: var(--gray-500);
+    --text-inverted: #FFFFFF;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.05);
     
     /* Spacing */
     --spacing-xs: 4px;
@@ -39,11 +55,6 @@
     --border-radius-sm: 8px;
     --border-radius-md: 16px;
     --border-radius-lg: 24px;
-    
-    /* Shadows */
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.1);
-    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.15);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.2);
     
     /* Transitions */
     --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -60,69 +71,70 @@
 
 /* Main Chat Widget */
 #chatWidget {
-    background: rgba(26, 29, 38, 0.95);
-    border-radius: 20px;
-    margin: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-lg);
+    margin: var(--spacing-md);
     display: flex;
     height: calc(100% - 32px);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Unified control layout */
 .control-group {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin: 14px 18px;
-    padding: 10px 12px;
-    background: linear-gradient(145deg, rgba(32, 35, 45, 0.7), rgba(38, 41, 55, 0.7));
-    border-radius: 16px;
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: var(--spacing-sm);
+    margin: var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: var(--surface);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
 }
 
 .control-group:hover {
-    border-color: rgba(123, 104, 238, 0.3);
+    border-color: var(--border-hover);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .control-group button {
     flex: 0 0 auto;
     min-width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(145deg, rgba(45, 50, 65, 0.8), rgba(52, 58, 77, 0.8));
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    color: #A5ADCB;
-    transition: all 0.3s ease;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    transition: var(--transition-normal);
 }
 
 .control-group button:hover {
-    background: linear-gradient(145deg, rgba(52, 58, 77, 0.8), rgba(58, 64, 85, 0.8));
-    border-color: rgba(123, 104, 238, 0.4);
-    color: #E4E6EB;
+    background: var(--surface-hover);
+    border-color: var(--brand-600);
+    color: var(--text);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .control-group button:pressed {
-    background: linear-gradient(145deg, rgba(45, 50, 65, 0.9), rgba(52, 58, 77, 0.9));
+    background: var(--surface-active);
     transform: translateY(1px);
     box-shadow: none;
 }
 
-/* Header do chat mais compacto e atraente */
+/* Chat Header */
 #chatHeader {
-    background: linear-gradient(135deg, #20232D, #292d3b);
-    border-bottom: 1px solid rgba(123, 104, 238, 0.15);
-    padding: 20px 24px;
-    border-radius: 16px 16px 0 0;
-    margin: 0 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    margin: 0 var(--spacing-md);
     animation: headerAppear 0.6s ease-out;
 }
 
@@ -140,27 +152,15 @@
 #chatTitle {
     font-size: 24px;
     font-weight: 700;
-    color: #E4E6EB;
+    color: var(--text);
     letter-spacing: -0.5px;
-    margin-bottom: 6px;
-    background: linear-gradient(90deg, #E4E6EB, #7B68EE);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-size: 200% auto;
-    animation: titleShine 3s linear infinite;
-}
-
-@keyframes titleShine {
-    to {
-        background-position: 200% center;
-    }
+    margin-bottom: var(--spacing-xs);
 }
 
 #chatSubtitle {
     font-size: 15px;
-    color: #A5ADCB;
-    margin-top: 6px;
-    opacity: 0.9;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
     font-weight: 500;
     animation: subtitleAppear 0.8s ease-out;
 }
@@ -171,49 +171,219 @@
         transform: translateX(-10px);
     }
     to {
-        opacity: 0.9;
+        opacity: 1;
         transform: translateX(0);
     }
 }
 
-/* Área de mensagens com melhor visualização */
+/* Message Area */
 #messageScroll, #chatScrollArea {
-    background-color: transparent;
+    background-color: var(--surface);
     border: none;
-    padding: 16px;
-    margin: 0 16px;
+    padding: var(--spacing-md);
+    margin: 0 var(--spacing-md);
 }
 
-#messageScroll QScrollBar:vertical, #chatScrollArea QScrollBar:vertical {
-    background-color: transparent;
+/* Message Container */
+#messageContainer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Message Styles */
+.message {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    transition: var(--transition-normal);
+}
+
+.message:hover {
+    border-color: var(--border-hover);
+    box-shadow: var(--shadow-sm);
+}
+
+.user-message {
+    background: var(--brand-50);
+    border-color: var(--brand-200);
+}
+
+.bot-message {
+    background: var(--gray-50);
+    border-color: var(--gray-200);
+}
+
+.message-content {
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    margin-top: var(--spacing-xs);
+}
+
+.message-metadata {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.message-time {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+/* Chat Input */
+#chatInput {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+}
+
+#chatInput:focus {
+    border-color: var(--brand-600);
+    box-shadow: var(--shadow-md);
+}
+
+#chatInput::placeholder {
+    color: var(--text-tertiary);
+}
+
+/* Loading Indicator */
+#loadingIndicator {
+    background: var(--surface);
+    padding: var(--spacing-md);
+}
+
+#loadingContainer {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+#loadingDots {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+    margin: var(--spacing-sm) 0;
+}
+
+#loadingDot0, #loadingDot1, #loadingDot2 {
     width: 8px;
-    margin: 2px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brand-400);
+    animation: loadingDot 1.4s infinite ease-in-out;
 }
 
-#messageScroll QScrollBar::handle:vertical, #chatScrollArea QScrollBar::handle:vertical {
-    background: linear-gradient(180deg, rgba(123, 104, 238, 0.3), rgba(123, 104, 238, 0.4));
-    border-radius: 4px;
-    min-height: 60px;
-    margin: 2px;
+#loadingDot1 { animation-delay: 0.2s; }
+#loadingDot2 { animation-delay: 0.4s; }
+
+@keyframes loadingDot {
+    0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+    40% { transform: scale(1); opacity: 1; }
 }
 
-#messageScroll QScrollBar::handle:vertical:hover, #chatScrollArea QScrollBar::handle:vertical:hover {
-    background: linear-gradient(180deg, rgba(123, 104, 238, 0.4), rgba(123, 104, 238, 0.5));
+#loadingText {
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-align: center;
+    margin-top: var(--spacing-sm);
 }
 
-#messageScroll QScrollBar::add-line:vertical,
-#messageScroll QScrollBar::sub-line:vertical,
-#chatScrollArea QScrollBar::add-line:vertical,
-#chatScrollArea QScrollBar::sub-line:vertical {
+/* Scrollbars */
+QScrollBar:vertical {
+    background: transparent;
+    width: 12px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: var(--gray-300);
+    border-radius: 6px;
+    min-height: 20px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: var(--gray-400);
+}
+
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
     height: 0;
-    background: none;
 }
 
-#messageScroll QScrollBar::add-page:vertical,
-#messageScroll QScrollBar::sub-page:vertical,
-#chatScrollArea QScrollBar::add-page:vertical,
-#chatScrollArea QScrollBar::sub-page:vertical {
-    background: none;
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+
+/* Splitter */
+QSplitter::handle {
+    background: var(--border);
+    width: 1px;
+}
+
+QSplitter::handle:hover {
+    background: var(--border-hover);
+}
+
+/* Knowledge Panel */
+#knowledgePanel {
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    min-width: 320px;
+    max-width: 420px;
+    padding: var(--spacing-md);
+}
+
+/* Drop Area */
+#dropArea {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-md);
+    min-height: 120px;
+    padding: var(--spacing-lg);
+    text-align: center;
+    transition: var(--transition-normal);
+}
+
+#dropArea:hover {
+    background: var(--surface-hover);
+    border-color: var(--brand-400);
+}
+
+#dropArea[dragOver="true"] {
+    background: var(--brand-50);
+    border-color: var(--brand-600);
+}
+
+#dropLabel {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-top: var(--spacing-sm);
+}
+
+/* Message Area */
+#messageArea {
+    background: var(--surface);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Container de mensagens mais eficiente */
@@ -583,17 +753,10 @@
 
 /* Melhorias no painel de conhecimento */
 #knowledgePanel {
-    background: linear-gradient(145deg, rgba(32, 35, 45, 0.98), rgba(38, 41, 55, 0.98));
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    padding: 24px;
-    border-radius: 16px;
-    width: 320px;
-    max-width: 320px;
-    overflow-y: auto;
-    margin: 16px 16px 16px 0;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    position: relative;
-    z-index: 10;
+    background: var(--bg-darker);
+    border-left: 1px solid var(--border-color);
+    min-width: 300px;
+    max-width: 400px;
 }
 
 #knowledgeTitleContainer {
@@ -2144,4 +2307,94 @@ QLabel#statusMessage {
     border-radius: 60px;
     margin: 32px auto;
     border: 1px solid rgba(123, 104, 238, 0.2);
-} 
+}
+
+/* Loading Indicator */
+#loadingIndicator {
+    background: transparent;
+    padding: 8px 16px;
+}
+
+#loadingContainer {
+    background: linear-gradient(145deg, rgba(32, 35, 45, 0.7), rgba(38, 41, 55, 0.7));
+    border: 1px solid rgba(123, 104, 238, 0.2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin: 8px 0;
+}
+
+#loadingDots {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+#loadingDot0, #loadingDot1, #loadingDot2 {
+    width: 8px;
+    height: 8px;
+    border-radius: 4px;
+    background-color: #7B68EE;
+    transition: all 0.3s ease;
+}
+
+#loadingText {
+    color: #A5ADCB;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Splitter Handles */
+QSplitter::handle {
+    background: var(--border-color);
+    width: 1px;
+}
+
+QSplitter::handle:hover {
+    background: var(--primary);
+}
+
+/* Conversation Panel */
+#conversationPanel {
+    background: var(--bg-darker);
+    border-right: 1px solid var(--border-color);
+    min-width: 280px;
+    max-width: 280px;
+}
+
+/* Knowledge Panel */
+#knowledgePanel {
+    background: var(--bg-darker);
+    border-left: 1px solid var(--border-color);
+    min-width: 300px;
+    max-width: 400px;
+}
+
+/* Drop Area */
+#dropArea {
+    background: var(--bg-light);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    margin: 16px;
+    padding: 32px;
+    transition: all 0.3s ease;
+}
+
+#dropArea:hover {
+    background: var(--bg-dark);
+    border-color: var(--primary);
+}
+
+#dropLabel {
+    color: var(--text-secondary);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Message Area */
+#messageArea {
+    background: var(--bg-dark);
+    flex: 1;
+    padding: 16px;
+    border-radius: 12px;
+    margin: 8px;
+}

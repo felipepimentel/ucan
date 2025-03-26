@@ -60,69 +60,68 @@
 
 /* Main Chat Widget */
 #chatWidget {
-    background: rgba(26, 29, 38, 0.95);
-    border-radius: 20px;
-    margin: 16px;
+    background: var(--surface);
+    border-radius: var(--border-radius-lg);
+    margin: var(--spacing-md);
     display: flex;
-    height: calc(100% - 32px);
+    height: calc(100% - var(--spacing-xl));
 }
 
 /* Unified control layout */
 .control-group {
     display: flex;
     align-items: center;
-    gap: 14px;
-    margin: 14px 18px;
-    padding: 10px 12px;
-    background: linear-gradient(145deg, rgba(32, 35, 45, 0.7), rgba(38, 41, 55, 0.7));
-    border-radius: 16px;
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    backdrop-filter: blur(10px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: var(--spacing-sm);
+    margin: var(--spacing-sm) var(--spacing-md);
+    padding: var(--spacing-sm);
+    background: var(--surface);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
 }
 
 .control-group:hover {
-    border-color: rgba(123, 104, 238, 0.3);
+    border-color: var(--primary);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .control-group button {
     flex: 0 0 auto;
     min-width: 40px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--border-radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(145deg, rgba(45, 50, 65, 0.8), rgba(52, 58, 77, 0.8));
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    color: #A5ADCB;
-    transition: all 0.3s ease;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    transition: var(--transition-normal);
 }
 
 .control-group button:hover {
-    background: linear-gradient(145deg, rgba(52, 58, 77, 0.8), rgba(58, 64, 85, 0.8));
-    border-color: rgba(123, 104, 238, 0.4);
-    color: #E4E6EB;
+    background: var(--surface-hover);
+    border-color: var(--primary);
+    color: var(--text);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .control-group button:pressed {
-    background: linear-gradient(145deg, rgba(45, 50, 65, 0.9), rgba(52, 58, 77, 0.9));
+    background: var(--surface-active);
     transform: translateY(1px);
     box-shadow: none;
 }
 
 /* Header do chat mais compacto e atraente */
 #chatHeader {
-    background: linear-gradient(135deg, #20232D, #292d3b);
-    border-bottom: 1px solid rgba(123, 104, 238, 0.15);
-    padding: 20px 24px;
-    border-radius: 16px 16px 0 0;
-    margin: 0 16px;
+    background: var(--gradient-bg);
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    margin: 0 var(--spacing-md);
     animation: headerAppear 0.6s ease-out;
 }
 
@@ -140,10 +139,10 @@
 #chatTitle {
     font-size: 24px;
     font-weight: 700;
-    color: #E4E6EB;
+    color: var(--text);
     letter-spacing: -0.5px;
-    margin-bottom: 6px;
-    background: linear-gradient(90deg, #E4E6EB, #7B68EE);
+    margin-bottom: var(--spacing-xs);
+    background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-size: 200% auto;
@@ -158,8 +157,8 @@
 
 #chatSubtitle {
     font-size: 15px;
-    color: #A5ADCB;
-    margin-top: 6px;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
     opacity: 0.9;
     font-weight: 500;
     animation: subtitleAppear 0.8s ease-out;
@@ -180,8 +179,8 @@
 #messageScroll, #chatScrollArea {
     background-color: transparent;
     border: none;
-    padding: 16px;
-    margin: 0 16px;
+    padding: var(--spacing-md);
+    margin: 0 var(--spacing-md);
 }
 
 #messageScroll QScrollBar:vertical, #chatScrollArea QScrollBar:vertical {
@@ -191,14 +190,14 @@
 }
 
 #messageScroll QScrollBar::handle:vertical, #chatScrollArea QScrollBar::handle:vertical {
-    background: linear-gradient(180deg, rgba(123, 104, 238, 0.3), rgba(123, 104, 238, 0.4));
-    border-radius: 4px;
+    background: var(--border);
+    border-radius: var(--border-radius-xs);
     min-height: 60px;
     margin: 2px;
 }
 
 #messageScroll QScrollBar::handle:vertical:hover, #chatScrollArea QScrollBar::handle:vertical:hover {
-    background: linear-gradient(180deg, rgba(123, 104, 238, 0.4), rgba(123, 104, 238, 0.5));
+    background: var(--primary);
 }
 
 #messageScroll QScrollBar::add-line:vertical,
@@ -206,7 +205,6 @@
 #chatScrollArea QScrollBar::add-line:vertical,
 #chatScrollArea QScrollBar::sub-line:vertical {
     height: 0;
-    background: none;
 }
 
 #messageScroll QScrollBar::add-page:vertical,
@@ -218,44 +216,27 @@
 
 /* Container de mensagens mais eficiente */
 #messageContainer {
-    background: rgba(32, 35, 45, 0.7);
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    border-radius: 16px;
-    padding: 24px;
-    margin: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    margin: var(--spacing-xs) 0;
+    padding: var(--spacing-md);
+    transition: var(--transition-normal);
 }
 
-#messageContainer::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 120px;
-    background: linear-gradient(to top, 
-        rgba(26, 29, 38, 0.95), 
-        rgba(26, 29, 38, 0.6) 40%,
-        transparent);
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    border-radius: 0 0 24px 24px;
-}
-
-#messageContainer:hover::after {
-    opacity: 1;
+#messageContainer:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Mensagens mais compactas e legíveis */
 #message_user {
     background: var(--gradient-message);
-    border-left: 4px solid var(--primary);
-    border-radius: 3px 20px 20px 3px;
-    padding: 18px 22px;
-    margin: 14px 52px 14px 10px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: messageSlideIn var(--transition-normal);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    color: var(--text);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-xs) var(--border-radius-lg);
+    padding: var(--spacing-md);
+    margin: var(--spacing-xs) var(--spacing-xl) var(--spacing-xs) var(--spacing-xs);
+    animation: messageSlideIn 0.3s ease-out;
 }
 
 @keyframes messageSlideIn {
@@ -270,19 +251,16 @@
 }
 
 #message_user:hover {
-    background: linear-gradient(135deg, rgba(123, 104, 238, 0.18), rgba(123, 104, 238, 0.22));
-    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
 }
 
 #message_assistant {
-    background: linear-gradient(135deg, rgba(32, 35, 45, 0.97), rgba(41, 45, 59, 0.97));
-    border-left: 4px solid var(--primary-dark);
-    border-radius: 3px 20px 20px 3px;
-    padding: 18px 22px;
-    margin: 14px 10px 14px 52px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    animation: messageSlideInRight var(--transition-normal);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: var(--surface-hover);
+    color: var(--text);
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-lg) var(--border-radius-xs);
+    padding: var(--spacing-md);
+    margin: var(--spacing-xs) var(--spacing-xs) var(--spacing-xs) var(--spacing-xl);
+    animation: messageSlideInRight 0.3s ease-out;
 }
 
 @keyframes messageSlideInRight {
@@ -297,55 +275,52 @@
 }
 
 #message_assistant:hover {
-    background: linear-gradient(135deg, rgba(37, 40, 54, 0.95), rgba(47, 52, 71, 0.95));
-    transform: translateX(-4px);
-    border-left: 3px solid var(--primary-dark);
+    box-shadow: var(--shadow-sm);
 }
 
 #message_system #messageContainer {
-    background-color: #24283b;
-    margin: 8px 96px;
-    border: 1px solid #32344a;
-    border-radius: 8px;
+    background: var(--surface-hover);
+    border-style: dashed;
+    opacity: 0.9;
 }
 
 #messageContainer:hover {
-    box-shadow: 0 0 var(--glow-amount) rgba(123, 104, 238, 0.2);
+    opacity: 1;
 }
 
 /* Cabeçalho da mensagem */
 #messageHeader {
-    margin-bottom: 10px;
     display: flex;
     align-items: center;
+    margin-bottom: var(--spacing-xs);
 }
 
 #roleIcon {
-    width: 22px;
-    height: 22px;
-    margin-right: 10px;
-    opacity: 0.9;
+    width: 20px;
+    height: 20px;
+    margin-right: var(--spacing-xs);
+    opacity: 0.8;
 }
 
 #roleName {
     font-weight: 600;
-    font-size: 15px;
-    color: #E4E6EB;
-    letter-spacing: 0.2px;
+    font-size: 13px;
+    color: var(--primary);
+    margin-right: var(--spacing-xs);
 }
 
 #timestampLabel {
-    font-size: 12px;
-    color: #9096A2;
-    margin-left: 10px;
-    opacity: 0.8;
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-left: auto;
 }
 
 #statusIcon {
-    min-width: 16px;
-    min-height: 16px;
-    opacity: 0.7;
-    margin-left: 6px;
+    width: 14px;
+    height: 14px;
+    margin-left: var(--spacing-xs);
+    opacity: 0.6;
+    transition: var(--transition-fast);
 }
 
 #statusIcon:hover {
@@ -354,124 +329,110 @@
 
 /* Conteúdo da mensagem */
 #messageContent {
-    font-size: 15px;
-    line-height: 1.6;
-    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
 }
 
 #messageContent p {
-    margin-bottom: var(--spacing-md);
+    margin: var(--spacing-xs) 0;
 }
 
 #messageContent a {
     color: var(--primary);
     text-decoration: none;
-    border-bottom: 1px solid transparent;
     transition: var(--transition-fast);
-    font-weight: 500;
 }
 
 #messageContent a:hover {
-    color: var(--primary-light);
-    border-bottom-color: var(--primary-light);
+    text-decoration: underline;
 }
 
 #messageContent code {
-    background: rgba(123, 104, 238, 0.1);
-    border-radius: var(--border-radius-sm);
-    padding: var(--spacing-xs) var(--spacing-sm);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    background: var(--surface-hover);
+    color: var(--text);
+    padding: 2px var(--spacing-xs);
+    border-radius: var(--border-radius-xs);
+    font-size: 13px;
 }
 
 #messageContent pre {
-    background: linear-gradient(145deg, 
-        rgba(26, 29, 38, 0.8),
-        rgba(32, 35, 45, 0.8)
-    );
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-md);
-    padding: var(--spacing-lg);
-    margin: var(--spacing-md) 0;
-    position: relative;
+    background: var(--surface-hover);
+    padding: var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border);
+    margin: var(--spacing-sm) 0;
+    overflow-x: auto;
 }
 
 #messageContent pre code {
     background: transparent;
-    border: none;
     padding: 0;
-    color: var(--text-primary);
-    display: block;
+    border-radius: 0;
 }
 
 #messageContent blockquote {
     border-left: 4px solid var(--primary);
-    margin: var(--spacing-md) 0;
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: linear-gradient(
-        to right,
-        rgba(123, 104, 238, 0.1),
-        rgba(123, 104, 238, 0.05)
-    );
-    border-radius: 0 var(--border-radius-md) var(--border-radius-md) 0;
+    margin: var(--spacing-sm) 0;
+    padding: var(--spacing-xs) var(--spacing-md);
     color: var(--text-secondary);
+    background: var(--surface-hover);
+    border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
 }
 
 /* Separador de data */
 #dateSeparator {
-    margin: 32px 0;
-    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    margin: var(--spacing-md) 0;
 }
 
 #separatorLine {
-    background-color: #32344a;
+    flex: 1;
     height: 1px;
+    background: var(--border);
 }
 
 #separatorText {
-    color: #565f89;
-    font-size: 13px;
+    margin: 0 var(--spacing-md);
+    color: var(--text-secondary);
+    font-size: 12px;
     font-weight: 500;
-    padding: 0 20px;
 }
 
 /* Barra de formatação */
 #formatBar {
-    height: 48px;
-    padding: 0 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    background: var(--surface-hover);
+    border-radius: var(--border-radius-sm);
+    padding: 2px var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
 }
 
 #formatButton {
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-xs);
+    padding: var(--spacing-xs);
+    margin: 0 2px;
+    color: var(--text);
+    transition: var(--transition-fast);
 }
 
 #formatButton:hover {
-    background: rgba(123, 104, 238, 0.1);
-    border-color: rgba(123, 104, 238, 0.4);
-    color: #E4E6EB;
+    background: var(--surface-hover);
+    border-color: var(--primary);
     transform: translateY(-1px);
 }
 
 #formatButton:pressed {
-    background: rgba(123, 104, 238, 0.2);
-    border-color: rgba(123, 104, 238, 0.5);
+    background: var(--surface-active);
     transform: translateY(1px);
 }
 
 #formatButton.active {
-    background: rgba(123, 104, 238, 0.15);
-    border-color: rgba(123, 104, 238, 0.5);
-    color: #E4E6EB;
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
 }
 
 #boldButton, #italicButton, #codeButton, #linkButton {
@@ -480,93 +441,85 @@
 
 /* Área de entrada mais eficiente */
 #inputArea {
-    background: rgba(32, 35, 45, 0.7);
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    border-radius: 16px;
-    padding: 16px;
-    margin: 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: var(--spacing-md);
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
 .input-row {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: flex-end;
 }
 
 .format-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    margin-bottom: var(--spacing-xs);
 }
 
 #messageInput {
-    background: rgba(32, 35, 45, 0.7);
-    border: 1px solid rgba(123, 104, 238, 0.2);
-    border-radius: 16px;
-    padding: 16px;
-    color: #E4E6EB;
-    min-height: 36px;
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm);
+    margin-right: var(--spacing-sm);
+    font-size: 14px;
+    resize: none;
+    transition: var(--transition-normal);
 }
 
 #messageInput:focus {
-    border-color: #7B68EE;
-    background: rgba(45, 50, 65, 0.9);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
 }
 
 #messageInput:hover {
-    border-color: rgba(123, 104, 238, 0.3);
+    border-color: var(--primary-hover);
 }
 
 #messageInput[empty="true"] {
-    font-style: italic;
-    color: #8A92A9;
+    color: var(--text-secondary);
 }
 
 #messageInput::placeholder {
-    background: linear-gradient(
-        90deg,
-        var(--text-secondary),
-        var(--text-muted)
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: var(--text-secondary);
 }
 
 #sendButton {
-    background: rgba(123, 104, 238, 0.9);
-    border: none;
-    border-radius: 16px;
-    padding: 16px 24px;
+    background: var(--primary);
     color: white;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
     font-weight: 600;
+    transition: var(--transition-fast);
 }
 
 #sendButton:hover {
-    background: rgba(138, 119, 253, 0.9);
+    background: var(--primary-hover);
 }
 
 #sendButton:pressed {
-    background: rgba(97, 82, 218, 0.9);
+    background: var(--primary-active);
 }
 
 #sendButton:disabled {
-    background: linear-gradient(135deg, rgba(123, 104, 238, 0.3), rgba(97, 82, 218, 0.3));
-    color: rgba(255, 255, 255, 0.4);
-    transform: none;
-    box-shadow: none;
+    background: var(--surface-hover);
+    color: var(--text-secondary);
+    cursor: not-allowed;
 }
 
 #charCounter {
-    color: #A5ADCB;
-    font-size: 13px;
-    margin-top: 8px;
-    opacity: 0.8;
-    transition: all 0.3s ease;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-left: var(--spacing-sm);
+    min-width: 40px;
+    text-align: right;
+    transition: var(--transition-fast);
 }
 
 #charCounter.warning {
-    color: #FFB347;
-    animation: pulse 2s infinite;
+    color: var(--error);
 }
 
 @keyframes pulse {
@@ -1133,7 +1086,7 @@ QToolTip {
 
 #chatWidget QLineEdit:focus {
     border-color: #7B68EE;
-    background-color: rgba(45, 50, 65, 0.9);
+    background: rgba(45, 50, 65, 0.9);
 }
 
 #chatWidget QLineEdit:hover {

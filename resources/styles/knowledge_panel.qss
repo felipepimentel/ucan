@@ -1,3 +1,4 @@
+/* Knowledge Panel */
 #knowledgePanel {
     background: var(--surface);
     border-radius: var(--border-radius-lg);
@@ -5,6 +6,7 @@
     padding: var(--spacing-md);
     border: 1px solid var(--border);
     box-shadow: var(--shadow-sm);
+    min-width: 280px;
 }
 
 #knowledgePanel:hover {
@@ -12,7 +14,8 @@
     box-shadow: var(--shadow-md);
 }
 
-#knowledgeHeader {
+/* Header */
+#panelHeader {
     background: var(--gradient-bg);
     border-bottom: 1px solid var(--border);
     padding: var(--spacing-md);
@@ -20,26 +23,28 @@
     margin-bottom: var(--spacing-md);
 }
 
-#knowledgeTitle {
+#panelTitle {
     font-size: 20px;
     font-weight: 600;
     color: var(--text);
     margin-bottom: var(--spacing-xs);
 }
 
-#knowledgeSubtitle {
+#panelSubtitle {
     font-size: 14px;
     color: var(--text-secondary);
     margin-top: var(--spacing-xs);
 }
 
-#knowledgeContent {
+/* Content */
+#panelContent {
     padding: var(--spacing-md);
     background: var(--surface);
     border-radius: var(--border-radius-md);
     border: 1px solid var(--border);
 }
 
+/* Search */
 #searchContainer {
     margin-bottom: var(--spacing-md);
 }
@@ -67,6 +72,7 @@
     color: var(--text-secondary);
 }
 
+/* Results */
 #resultsContainer {
     margin-top: var(--spacing-md);
 }
@@ -105,28 +111,30 @@
     margin-top: var(--spacing-xs);
 }
 
+/* Empty State */
 #emptyState {
     text-align: center;
     padding: var(--spacing-xl);
     color: var(--text-secondary);
 }
 
-#emptyStateIcon {
+#emptyIcon {
     font-size: 48px;
     margin-bottom: var(--spacing-md);
     opacity: 0.5;
 }
 
-#emptyStateText {
+#emptyText {
     font-size: 16px;
     margin-bottom: var(--spacing-sm);
 }
 
-#emptyStateSubtext {
+#emptySubtext {
     font-size: 14px;
     color: var(--text-secondary);
 }
 
+/* Loading State */
 #loadingState {
     text-align: center;
     padding: var(--spacing-xl);
@@ -141,6 +149,7 @@
     color: var(--text-secondary);
 }
 
+/* Error State */
 #errorState {
     text-align: center;
     padding: var(--spacing-xl);
@@ -162,7 +171,8 @@
     color: var(--text-secondary);
 }
 
-#retryButton {
+/* Buttons */
+#actionButton {
     background: var(--primary);
     color: white;
     border: none;
@@ -174,14 +184,15 @@
     transition: var(--transition-fast);
 }
 
-#retryButton:hover {
+#actionButton:hover {
     background: var(--primary-hover);
 }
 
-#retryButton:pressed {
+#actionButton:pressed {
     background: var(--primary-active);
 }
 
+/* Scrollbar */
 #knowledgePanel QScrollBar:vertical {
     background: transparent;
     width: 8px;
@@ -208,6 +219,7 @@
     background: none;
 }
 
+/* Animations */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -223,21 +235,22 @@
     animation: fadeIn 0.3s ease-out;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
     #knowledgePanel {
         margin: var(--spacing-sm);
         padding: var(--spacing-sm);
     }
 
-    #knowledgeHeader {
+    #panelHeader {
         padding: var(--spacing-sm);
     }
 
-    #knowledgeTitle {
+    #panelTitle {
         font-size: 18px;
     }
 
-    #knowledgeSubtitle {
+    #panelSubtitle {
         font-size: 13px;
     }
 
@@ -254,123 +267,100 @@
     }
 }
 
-#knowledgeTitleContainer {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 16px;
-    margin-bottom: 16px;
-    background-color: rgba(255, 255, 255, 0.03);
+/* Actions Area */
+#kbActions {
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-md);
 }
 
-#knowledgePanelDescription {
-    color: #A0A0A0;
-    font-size: 13px;
-    margin: 0 16px 16px 16px;
-    line-height: 1.4;
-}
-
-#knowledgeList {
-    background: transparent;
-    border: none;
-    padding: 0 8px;
-}
-
-#knowledgeList::item {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    margin-bottom: 12px;
-    padding: 16px;
-    transition: all 0.2s ease;
-}
-
-#knowledgeList::item:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-1px);
-}
-
-#emptyKnowledgeLabel {
-    color: #808080;
+#kbActions QPushButton {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--surface);
+    color: var(--text);
     font-size: 14px;
-    padding: 32px 24px;
-    margin: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    text-align: center;
+    transition: var(--transition-normal);
 }
 
-.knowledge-base-item {
-    background: transparent;
+#kbActions QPushButton:hover {
+    background-color: var(--surface-hover);
+    border-color: var(--brand-600);
+    color: var(--brand-600);
 }
 
-.knowledge-base-name {
-    color: #E1E1E1;
-    font-size: 15px;
-    font-weight: 500;
-    margin-bottom: 6px;
+#kbActions QPushButton:pressed {
+    background-color: var(--surface-active);
+    border-color: var(--brand-700);
+    color: var(--brand-700);
 }
 
-.knowledge-base-scope {
-    color: #4A9EFF;
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 10px;
-    padding: 4px 8px;
-    background: rgba(74, 158, 255, 0.1);
-    border-radius: 4px;
-    display: inline-block;
+/* Scroll Area */
+#kbScroll {
+    border: none;
+    background-color: transparent;
+    padding: var(--spacing-md);
 }
 
-.knowledge-base-description {
-    color: #A0A0A0;
-    font-size: 13px;
-    line-height: 1.5;
-}
-
-/* Scrollbar styling */
-#knowledgeList QScrollBar:vertical {
-    width: 8px;
+#kbScroll QScrollBar:vertical {
+    width: 12px;
     background: transparent;
     margin: 0;
 }
 
-#knowledgeList QScrollBar::handle:vertical {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+#kbScroll QScrollBar::handle:vertical {
+    background: var(--gray-300);
+    border-radius: 6px;
     min-height: 30px;
 }
 
-#knowledgeList QScrollBar::handle:vertical:hover {
-    background: rgba(255, 255, 255, 0.3);
+#kbScroll QScrollBar::handle:vertical:hover {
+    background: var(--gray-400);
 }
 
-#knowledgeList QScrollBar::add-line:vertical,
-#knowledgeList QScrollBar::sub-line:vertical {
+#kbScroll QScrollBar::add-line:vertical,
+#kbScroll QScrollBar::sub-line:vertical {
     height: 0;
-    background: none;
 }
 
-#knowledgeList QScrollBar::add-page:vertical,
-#knowledgeList QScrollBar::sub-page:vertical {
-    background: none;
-}
-
-#refreshButton {
+#kbScroll QScrollBar::add-page:vertical,
+#kbScroll QScrollBar::sub-page:vertical {
     background: transparent;
-    border: none;
-    border-radius: 6px;
-    padding: 6px;
 }
 
-#refreshButton:hover {
-    background: rgba(255, 255, 255, 0.05);
+/* Knowledge Base Container */
+#kbContainer {
+    background-color: transparent;
+    padding: var(--spacing-sm);
 }
 
-#refreshButton:pressed {
-    background: rgba(255, 255, 255, 0.08);
+/* Knowledge Base Item */
+#knowledgeBaseItem {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    transition: var(--transition-normal);
 }
 
-#refreshButton QIcon {
-    color: #A0A0A0;
+#knowledgeBaseItem:hover {
+    background-color: var(--surface-hover);
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+#knowledgeBaseItem #kbName {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: var(--spacing-xs);
+}
+
+#knowledgeBaseItem #kbDescription {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.4;
 } 

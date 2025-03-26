@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     QSize,
     Qt,
     QTime,
-    QTimerEvent,
+    QTimer,
     Signal,
 )
 from PySide6.QtGui import (
@@ -25,8 +25,6 @@ from PySide6.QtGui import (
     QHideEvent,
     QIcon,
     QKeyEvent,
-    QPainter,
-    QPaintEvent,
     QShowEvent,
     QTextBlockFormat,
     QTextCharFormat,
@@ -600,139 +598,107 @@ class SearchBox(QWidget):
 
 
 class LoadingIndicator(QWidget):
-    """Indicador de carregamento animado com texto."""
+    """Widget para exibir indicador de carregamento."""
 
-    def __init__(
-        self,
-        parent: Optional[QWidget] = None,
-        color: str = PRIMARY_COLOR,
-        size: int = 40,
-        text: str = "Carregando...",
-    ) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         """
         Inicializa o indicador de carregamento.
 
         Args:
             parent: Widget pai
-            color: Cor do indicador
-            size: Tamanho do indicador
-            text: Texto a ser exibido
         """
         super().__init__(parent)
         self.setObjectName("loadingIndicator")
+        self._setup_ui()
+        self._setup_animation()
 
-        # Configurações visuais
-        self.angle = 0
-        self.color = QColor(color)
-        self.text = text
-        self.dots = 0
-        self.dot_timer = 0
+    def _setup_ui(self) -> None:
+        """Configura a interface do widget."""
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 8, 16, 8)
+        layout.setSpacing(8)
 
-        # Configurar tamanho
-        self.indicator_size = size
-        self.setMinimumSize(max(size, 200), size + 30)
+        # Container para o indicador
+        container = QWidget()
+        container.setObjectName("loadingContainer")
+        container_layout = QHBoxLayout(container)
+        container_layout.setContentsMargins(16, 12, 16, 12)
+        container_layout.setSpacing(8)
 
-        # Timers para animações
-        self.spin_timer = self.startTimer(30)  # Timer para rotação
-        self.dot_timer = self.startTimer(500)  # Timer para os pontos
+        # Dots de loading
+        dots_container = QWidget()
+        dots_container.setObjectName("loadingDots")
+        dots_layout = QHBoxLayout(dots_container)
+        dots_layout.setContentsMargins(0, 0, 0, 0)
+        dots_layout.setSpacing(4)
 
-        # Efeito de fade in
-        self.setAutoFillBackground(True)
-        self.opacity_effect = QPropertyAnimation(self, b"windowOpacity")
-        self.opacity_effect.setDuration(200)
-        self.opacity_effect.setStartValue(0)
-        self.opacity_effect.setEndValue(1)
-        self.opacity_effect.setEasingCurve(QEasingCurve.OutCubic)
-        self.opacity_effect.start()
+        # Criar 3 dots
+        for i in range(3):
+            dot = QLabel()
+            dot.setObjectName(f"loadingDot{i}")
+            dot.setFixedSize(8, 8)
+            dots_layout.addWidget(dot)
 
-    def timerEvent(self, event: QTimerEvent) -> None:
-        """
-        Manipula eventos do timer para animações.
+        container_layout.addWidget(dots_container)
+        container_layout.addStretch()
 
-        Args:
-            event: Evento do timer
-        """
-        if event.timerId() == self.spin_timer:
-            self.angle = (self.angle + 5) % 360
-            self.update()
-        elif event.timerId() == self.dot_timer:
-            self.dots = (self.dots + 1) % 4
-            self.update()
+        # Texto de loading
+        text_label = QLabel("Processando...")
+        text_label.setObjectName("loadingText")
+        container_layout.addWidget(text_label)
 
-    def paintEvent(self, event: QPaintEvent) -> None:
-        """
-        Desenha o indicador de carregamento.
+        layout.addWidget(container)
 
-        Args:
-            event: Evento de pintura
-        """
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
+    def _setup_animation(self) -> None:
+        """Configura a animação dos dots."""
+        # Criar timer para animação dos dots
+        self.dot_timer = QTimer(self)
+        self.dot_timer.timeout.connect(self._update_dots)
+        self.dot_timer.start(400)  # Atualiza a cada 400ms
 
-        # Desenhar o spinner
-        center_x = self.width() / 2
-        center_y = (self.height() - 20) / 2  # Ajuste para o texto
+        # Estado da animação
+        self.dot_states = [0, 0, 0]  # 0: normal, 1: pulsing, 2: fading
 
-        painter.translate(center_x, center_y)
-        painter.rotate(self.angle)
+    def _update_dots(self) -> None:
+        """Atualiza o estado dos dots."""
+        # Atualiza o estado de cada dot
+        for i in range(3):
+            dot = self.findChild(QLabel, f"loadingDot{i}")
+            if dot:
+                if self.dot_states[i] == 0:
+                    dot.setStyleSheet("""
+                        QLabel {
+                            background-color: #7B68EE;
+                            border-radius: 4px;
+                        }
+                    """)
+                elif self.dot_states[i] == 1:
+                    dot.setStyleSheet("""
+                        QLabel {
+                            background-color: #8A77FD;
+                            border-radius: 4px;
+                        }
+                    """)
+                else:
+                    dot.setStyleSheet("""
+                        QLabel {
+                            background-color: #6152DA;
+                            border-radius: 4px;
+                        }
+                    """)
 
-        painter.setPen(Qt.NoPen)
-
-        # Desenha vários círculos em posições diferentes com opacidade variada
-        for i in range(8):
-            painter.save()
-            painter.rotate(i * 45)
-            painter.translate(self.indicator_size / 4, 0)
-
-            # Varia a opacidade baseada na posição
-            opacity = 255 - ((i * 30) % 255)
-            color = QColor(self.color)
-            color.setAlpha(opacity)
-            painter.setBrush(color)
-
-            circle_size = self.indicator_size / 10
-            painter.drawEllipse(
-                -circle_size / 2, -circle_size / 2, circle_size, circle_size
-            )
-            painter.restore()
-
-        # Desenhar o texto
-        painter.resetTransform()
-        text = self.text + "." * self.dots
-        font = painter.font()
-        font.setPointSize(10)
-        painter.setFont(font)
-
-        text_rect = painter.fontMetrics().boundingRect(text)
-        text_x = (self.width() - text_rect.width()) / 2
-        text_y = center_y + self.indicator_size / 2 + 20
-
-        painter.setPen(self.color)
-        painter.drawText(int(text_x), int(text_y), text)
+        # Atualiza os estados
+        self.dot_states = [(state + 1) % 3 for state in self.dot_states]
 
     def showEvent(self, event: QShowEvent) -> None:
-        """
-        Manipula evento de exibição.
-
-        Args:
-            event: Evento de exibição
-        """
+        """Inicia a animação quando o widget é mostrado."""
         super().showEvent(event)
-        self.spin_timer = self.startTimer(30)
-        self.dot_timer = self.startTimer(500)
+        self.dot_timer.start()
 
     def hideEvent(self, event: QHideEvent) -> None:
-        """
-        Manipula evento de ocultação.
-
-        Args:
-            event: Evento de ocultação
-        """
+        """Para a animação quando o widget é escondido."""
         super().hideEvent(event)
-        if self.spin_timer:
-            self.killTimer(self.spin_timer)
-        if self.dot_timer:
-            self.killTimer(self.dot_timer)
+        self.dot_timer.stop()
 
 
 class StatusBar(QStatusBar):

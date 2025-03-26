@@ -6,7 +6,7 @@ import asyncio
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QDragEnterEvent, QDropEvent, QIcon
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -43,90 +43,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("UCAN")
         self.setMinimumSize(1200, 800)
 
-        # Define os estilos
-        self.setStyleSheet("""
-            QMainWindow {
-                background-color: #F5F7FA;
-            }
-            
-            #sidebarWidget {
-                background-color: #FFFFFF;
-                border-right: 1px solid #E2E8F0;
-                min-width: 280px;
-                max-width: 380px;
-            }
-            
-            #chatWidget {
-                background-color: #FFFFFF;
-                border-radius: 8px;
-                margin: 16px;
-            }
-            
-            #knowledgePanel {
-                background-color: #FFFFFF;
-                border-left: 1px solid #E2E8F0;
-                min-width: 320px;
-                max-width: 420px;
-                padding: 0;
-            }
-            
-            #knowledgePanel #sectionHeader {
-                background-color: #F8FAFC;
-                border-bottom: 1px solid #E2E8F0;
-                padding: 16px 20px;
-                margin: 0;
-            }
-            
-            #knowledgePanel #actionButton {
-                background-color: #EBF8FF;
-                color: #2B6CB0;
-                border: 2px solid #BEE3F8;
-                font-weight: 600;
-            }
-            
-            #knowledgePanel #actionButton:hover {
-                background-color: #BEE3F8;
-                border-color: #90CDF4;
-            }
-            
-            #knowledgePanel #actionButton:pressed {
-                background-color: #90CDF4;
-                border-color: #63B3ED;
-            }
-            
-            QStatusBar {
-                background-color: #F8FAFC;
-                border-top: 1px solid #E2E8F0;
-                color: #4A5568;
-                padding: 6px 16px;
-                font-size: 13px;
-            }
-            
-            QStatusBar::item {
-                border: none;
-            }
-            
-            #searchBox {
-                background-color: #F8FAFC;
-                border: 2px solid #E2E8F0;
-                border-radius: 24px;
-                padding: 10px 16px;
-                margin: 12px 16px;
-            }
-            
-            #searchBox:focus-within {
-                border-color: #2196F3;
-                background-color: #FFFFFF;
-                box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
-            }
-            
-            #searchBox QLineEdit {
-                background: transparent;
-                border: none;
-                color: #2C3E50;
-            }
-        """)
-
         # Widget central
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -135,8 +51,10 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
 
         # Splitter principal para dividir a interface
-        splitter = QSplitter(Qt.Horizontal)
-        layout.addWidget(splitter)
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setHandleWidth(1)
+        self.splitter.setChildrenCollapsible(False)
+        layout.addWidget(self.splitter)
 
         # Sidebar (lista de conversas)
         sidebar = QWidget()
@@ -162,27 +80,6 @@ class MainWindow(QMainWindow):
         new_chat_btn.clicked.connect(self._on_new_chat)
         sidebar_header_layout.addWidget(new_chat_btn)
 
-        # Atualiza o estilo do botão de nova conversa
-        self.setStyleSheet(
-            self.styleSheet()
-            + """
-            #newChatButton {
-                background-color: #E3F2FD;
-                border: none;
-                border-radius: 16px;
-                padding: 6px;
-            }
-            
-            #newChatButton:hover {
-                background-color: #BBDEFB;
-            }
-            
-            #newChatButton:pressed {
-                background-color: #90CAF9;
-            }
-        """
-        )
-
         sidebar_layout.addWidget(sidebar_header)
 
         # Barra de pesquisa
@@ -195,7 +92,7 @@ class MainWindow(QMainWindow):
         conversations_list.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         sidebar_layout.addWidget(conversations_list)
 
-        splitter.addWidget(sidebar)
+        self.splitter.addWidget(sidebar)
 
         # Área principal de chat
         chat_container = QWidget()
@@ -211,11 +108,11 @@ class MainWindow(QMainWindow):
         chat_layout.addWidget(toolbar)
 
         # Widget de chat
-        self.chat_widget = ChatWidget()
+        self.chat_widget = ChatWidget(parent=chat_container)
         self.chat_widget.message_sent.connect(self._on_message_sent)
         chat_layout.addWidget(self.chat_widget)
 
-        splitter.addWidget(chat_container)
+        self.splitter.addWidget(chat_container)
 
         # Painel de conhecimento
         knowledge_panel = QWidget()
@@ -225,6 +122,32 @@ class MainWindow(QMainWindow):
         knowledge_header = QLabel("Base de Conhecimento")
         knowledge_header.setObjectName("sectionHeader")
         knowledge_layout.addWidget(knowledge_header)
+
+        # Área de drop para arquivos
+        drop_area = QWidget()
+        drop_area.setObjectName("dropArea")
+        drop_area.setAcceptDrops(True)
+        drop_layout = QVBoxLayout(drop_area)
+        drop_layout.setContentsMargins(16, 16, 16, 16)
+        drop_layout.setSpacing(8)
+
+        drop_icon = QLabel()
+        drop_icon.setObjectName("dropIcon")
+        drop_icon.setPixmap(QIcon.fromTheme("document-new").pixmap(32, 32))
+        drop_icon.setAlignment(Qt.AlignCenter)
+        drop_layout.addWidget(drop_icon)
+
+        drop_label = QLabel("Arraste arquivos aqui")
+        drop_label.setObjectName("dropLabel")
+        drop_label.setAlignment(Qt.AlignCenter)
+        drop_layout.addWidget(drop_label)
+
+        drop_sublabel = QLabel("ou clique para selecionar")
+        drop_sublabel.setObjectName("dropSubLabel")
+        drop_sublabel.setAlignment(Qt.AlignCenter)
+        drop_layout.addWidget(drop_sublabel)
+
+        knowledge_layout.addWidget(drop_area)
 
         # Botões de ação
         actions_widget = QWidget()
@@ -244,12 +167,15 @@ class MainWindow(QMainWindow):
         knowledge_layout.addWidget(actions_widget)
         knowledge_layout.addStretch()
 
-        splitter.addWidget(knowledge_panel)
+        self.splitter.addWidget(knowledge_panel)
 
         # Configura as proporções do splitter
-        splitter.setStretchFactor(0, 1)  # Sidebar
-        splitter.setStretchFactor(1, 2)  # Chat
-        splitter.setStretchFactor(2, 1)  # Knowledge Panel
+        self.splitter.setStretchFactor(0, 1)  # Sidebar
+        self.splitter.setStretchFactor(1, 2)  # Chat
+        self.splitter.setStretchFactor(2, 1)  # Knowledge Panel
+
+        # Define os tamanhos iniciais
+        self.splitter.setSizes([280, self.width() - 680, 400])
 
         # Barra de status
         self.status_bar = StatusBar()
@@ -258,6 +184,50 @@ class MainWindow(QMainWindow):
         # Indicador de carregamento (inicialmente oculto)
         self.loading = LoadingIndicator(self)
         self.loading.hide()
+
+        # Habilita drag and drop
+        self.setAcceptDrops(True)
+
+        # Configura o tema
+        from ucan.ui.theme_manager import theme_manager
+
+        theme_manager.theme_changed.connect(self._apply_theme)
+        self._apply_theme()
+
+    def _apply_theme(self):
+        """Aplica o tema atual."""
+        from ucan.ui.theme_manager import theme_manager
+
+        if theme := theme_manager.current_theme:
+            self.setStyleSheet(theme.generate_stylesheet())
+            # Atualiza também os componentes filhos importantes
+            if hasattr(self, "chat_widget"):
+                self.chat_widget.setStyleSheet(theme.generate_stylesheet())
+            if hasattr(self, "status_bar"):
+                self.status_bar.setStyleSheet(theme.generate_stylesheet())
+
+    def dragEnterEvent(self, event: QDragEnterEvent) -> None:
+        """Manipula o evento de início de drag."""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+            self.findChild(QWidget, "dropArea").setProperty("dragOver", True)
+            self.style().polish(self.findChild(QWidget, "dropArea"))
+
+    def dragLeaveEvent(self, event: QDragEnterEvent) -> None:
+        """Manipula o evento de saída de drag."""
+        self.findChild(QWidget, "dropArea").setProperty("dragOver", False)
+        self.style().polish(self.findChild(QWidget, "dropArea"))
+
+    def dropEvent(self, event: QDropEvent) -> None:
+        """Manipula o evento de drop."""
+        self.findChild(QWidget, "dropArea").setProperty("dragOver", False)
+        self.style().polish(self.findChild(QWidget, "dropArea"))
+
+        urls = event.mimeData().urls()
+        for url in urls:
+            file_path = url.toLocalFile()
+            if file_path:
+                self.app_controller.add_file_to_knowledge_base(file_path)
 
     def _on_new_chat(self) -> None:
         """Cria uma nova conversa."""

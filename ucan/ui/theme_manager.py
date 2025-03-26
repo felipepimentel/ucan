@@ -237,66 +237,72 @@ class ThemeManager(QObject):
                     except Exception as e:
                         print(f"Erro ao copiar arquivo de estilo {style_file}: {e}")
 
-        dark_theme = Theme(
-            id="dark",
-            name="Dark",
-            is_dark=True,
+        # Define o tema claro como padrão
+        light_theme = Theme(
+            id="light",
+            name="Light",
+            is_dark=False,
             colors={
-                "background": "#1A1A1A",
-                "foreground": "#E1E1E1",
-                "secondary_background": "#2A2A2A",
-                "border": "#3A3A3A",
-                "accent": "#7B68EE",
-                "error": "#FF6B6B",
-                "success": "#4CAF50",
-                "warning": "#FFB86C",
-                "button_background": "#7B68EE",
+                "background": "#F9FAFB",
+                "foreground": "#111827",
+                "secondary_background": "#F3F4F6",
+                "border": "#E5E7EB",
+                "accent": "#0EA5E9",
+                "error": "#EF4444",
+                "success": "#10B981",
+                "warning": "#F59E0B",
+                "button_background": "#0EA5E9",
                 "button_foreground": "#FFFFFF",
-                "button_hover_background": "#8F7EF2",
-                "button_active_background": "#6A57EA",
-                "input_background": "#2A2A2A",
-                "input_foreground": "#E1E1E1",
-                "selection_background": "#7B68EE",
+                "button_hover_background": "#0284C7",
+                "button_active_background": "#0369A1",
+                "input_background": "#FFFFFF",
+                "input_foreground": "#111827",
+                "selection_background": "#0EA5E9",
                 "selection_foreground": "#FFFFFF",
-                "hover_background": "#3A3A3A",
+                "hover_background": "#F3F4F6",
             },
             metadata={
                 "author": "UCAN Team",
                 "version": "1.0",
-                "description": "Tema escuro padrão do UCAN",
+                "description": "Tema claro padrão do UCAN",
             },
         )
 
-        # Carrega os arquivos CSS adicionais
+        # Carrega os arquivos CSS na ordem correta
         css_files = [
-            self._styles_dir / "main.css",
-            self._styles_dir / "chat.css",
-            self._styles_dir / "knowledge.qss",
+            self._styles_dir / "main.css",  # Variáveis e estilos base
+            self._styles_dir / "chat.css",  # Estilos específicos do chat
+            self._styles_dir / "knowledge.qss",  # Estilos do painel de conhecimento
+            self._styles_dir / "conversation_list.qss",  # Estilos da lista de conversas
+            self._styles_dir
+            / "knowledge_panel.qss",  # Estilos do painel de conhecimento
         ]
 
         # Combina todos os arquivos CSS em um único stylesheet
         combined_css = []
-        
+
         # Primeiro adiciona o CSS base do tema
-        combined_css.append(dark_theme.generate_stylesheet())
-        
-        # Depois adiciona os arquivos CSS personalizados
+        combined_css.append(light_theme.generate_stylesheet())
+
+        # Depois adiciona os arquivos CSS personalizados na ordem correta
         for css_file in css_files:
             if css_file.exists():
                 try:
                     with open(css_file, "r", encoding="utf-8") as f:
                         content = f.read().strip()
                         if content:  # Só adiciona se não estiver vazio
-                            if css_file.suffix == '.qss':
+                            if css_file.suffix == ".qss":
                                 # Wrap QSS files to ensure they're properly applied
                                 content = f"/* Begin {css_file.name} */\n{content}\n/* End {css_file.name} */"
                             combined_css.append(content)
-                            print(f"Carregado arquivo de estilo: {css_file} ({len(content)} bytes)")
+                            print(
+                                f"Carregado arquivo de estilo: {css_file} ({len(content)} bytes)"
+                            )
                 except Exception as e:
                     print(f"Erro ao carregar arquivo CSS {css_file}: {e}")
 
         # Cria um arquivo temporário com o CSS combinado
-        temp_css_path = self._styles_dir / "dark_combined.css"
+        temp_css_path = self._styles_dir / "light_combined.css"
         temp_css_path.parent.mkdir(parents=True, exist_ok=True)
 
         try:
@@ -307,10 +313,10 @@ class ThemeManager(QObject):
             print(f"Erro ao salvar CSS combinado: {e}")
 
         # Atualiza o caminho do CSS no tema
-        dark_theme.css_path = str(temp_css_path)
+        light_theme.css_path = str(temp_css_path)
 
-        self._themes["dark"] = dark_theme
-        self._current_theme = dark_theme
+        self._themes["light"] = light_theme
+        self._current_theme = light_theme
 
         # Configura o watcher para os arquivos CSS
         for css_file in css_files:

@@ -8,7 +8,7 @@ from uuid import uuid4
 from sqlalchemy import JSON, Column, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 
-from ucan.core.database import Base
+from ucan.core.base import Base
 
 
 class ConversationType(Base):

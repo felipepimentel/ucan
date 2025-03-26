@@ -1,83 +1,103 @@
-/* Painel de conhecimento */
+/* Knowledge Panel */
 #knowledgePanel {
-    background-color: #1e1e1e;
-    border-left: 1px solid #333333;
+    background-color: var(--surface);
+    border-left: 1px solid var(--border);
 }
 
-/* Área de ações */
+/* Actions Area */
 #kbActions {
-    background-color: #252526;
-    border-bottom: 1px solid #333333;
+    background-color: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: var(--spacing-md);
 }
 
 #kbActions QPushButton {
-    padding: 6px 12px;
-    border: 1px solid #454545;
-    border-radius: 4px;
-    background-color: #2d2d2d;
-    color: #cccccc;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    transition: var(--transition-normal);
 }
 
 #kbActions QPushButton:hover {
-    background-color: #3d3d3d;
-    border-color: #565656;
+    background-color: var(--surface-hover);
+    border-color: var(--brand-600);
+    color: var(--brand-600);
 }
 
 #kbActions QPushButton:pressed {
-    background-color: #404040;
+    background-color: var(--surface-active);
+    border-color: var(--brand-700);
+    color: var(--brand-700);
 }
 
-/* Área de rolagem */
+/* Scroll Area */
 #kbScroll {
     border: none;
     background-color: transparent;
+    padding: var(--spacing-md);
 }
 
 #kbScroll QScrollBar:vertical {
-    width: 8px;
+    width: 12px;
     background: transparent;
+    margin: 0;
 }
 
 #kbScroll QScrollBar::handle:vertical {
-    background: #4a4a4a;
-    border-radius: 4px;
+    background: var(--gray-300);
+    border-radius: 6px;
     min-height: 30px;
 }
 
 #kbScroll QScrollBar::handle:vertical:hover {
-    background: #555555;
+    background: var(--gray-400);
 }
 
 #kbScroll QScrollBar::add-line:vertical,
 #kbScroll QScrollBar::sub-line:vertical {
-    height: 0px;
+    height: 0;
 }
 
-/* Container de bases */
+#kbScroll QScrollBar::add-page:vertical,
+#kbScroll QScrollBar::sub-page:vertical {
+    background: transparent;
+}
+
+/* Knowledge Base Container */
 #kbContainer {
     background-color: transparent;
+    padding: var(--spacing-sm);
 }
 
-/* Item de base de conhecimento */
+/* Knowledge Base Item */
 #knowledgeBaseItem {
-    background-color: #252526;
-    border: 1px solid #333333;
-    border-radius: 6px;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    transition: var(--transition-normal);
 }
 
 #knowledgeBaseItem:hover {
-    background-color: #2d2d2d;
-    border-color: #454545;
+    background-color: var(--surface-hover);
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
 }
 
 #knowledgeBaseItem #kbName {
     font-size: 14px;
-    font-weight: bold;
-    color: #cccccc;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: var(--spacing-xs);
 }
 
 #knowledgeBaseItem #kbDescription {
-    font-size: 12px;
-    color: #999999;
+    font-size: 13px;
+    color: var(--text-secondary);
     line-height: 1.4;
 } 

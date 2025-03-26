@@ -158,7 +158,26 @@ class AppController(EventEmitter):
         Returns:
             Lista de conversas
         """
-        return self.conversations
+        try:
+            # Carrega conversas do banco de dados
+            conversations_data = db.get_conversations()
+            self.conversations = []
+
+            for conv_data in conversations_data:
+                conversation = Conversation(
+                    id=conv_data["id"],
+                    title=conv_data["title"],
+                    type_id=conv_data.get("type_id"),
+                    created_at=conv_data["created_at"],
+                    updated_at=conv_data["updated_at"],
+                    meta_data=conv_data["meta_data"],
+                )
+                self.conversations.append(conversation)
+
+            return self.conversations
+        except Exception as e:
+            logger.error(f"Erro ao carregar conversas: {e}")
+            return []
 
     def select_conversation(self, conversation: Conversation) -> None:
         """
@@ -219,31 +238,74 @@ class AppController(EventEmitter):
         if not self.current_conversation:
             raise RuntimeError("Nenhuma conversa selecionada")
 
-        # Criar e adicionar mensagem do usuário
-        user_message = Message(content=message, role="user", meta_data={})
-        self.current_conversation.messages.append(user_message)
-        self.emit("message_received", user_message)
-
         try:
+            # Emitir evento de início do processamento
+            self.emit("processing_started")
+
+            # Criar e adicionar mensagem do usuário
+            user_message = Message(
+                content=message,
+                role="user",
+                meta_data={"timestamp": datetime.utcnow().isoformat()},
+            )
+            self.current_conversation.messages.append(user_message)
+            self.emit("message_received", user_message.content, True)
+
+            # Salvar mensagem do usuário
+            db.save_message(
+                user_message.id,
+                self.current_conversation.id,
+                user_message.role,
+                user_message.content,
+                user_message.meta_data,
+            )
+
             # Gerar resposta do assistente
             response = await self.llm.generate_response(message)
             assistant_message = Message(
-                content=response, role="assistant", meta_data={}
+                content=response,
+                role="assistant",
+                meta_data={"timestamp": datetime.utcnow().isoformat()},
             )
             self.current_conversation.messages.append(assistant_message)
-            self.emit("message_received", assistant_message)
+            self.emit("message_received", assistant_message.content, False)
+
+            # Salvar mensagem do assistente
+            db.save_message(
+                assistant_message.id,
+                self.current_conversation.id,
+                assistant_message.role,
+                assistant_message.content,
+                assistant_message.meta_data,
+            )
+
+            # Atualiza a conversa no banco
+            self.current_conversation.updated_at = datetime.utcnow().isoformat()
+            self._save_conversation(self.current_conversation)
+            self.emit("conversation_updated", self.current_conversation)
+
         except Exception as e:
-            logger.error("Erro ao gerar resposta: %s", e)
+            logger.error(f"Erro ao processar mensagem: {e}")
             error_message = Message(
-                content=f"Erro ao gerar resposta: {e}", role="system", meta_data={}
+                content=f"Erro ao processar mensagem: {e}",
+                role="system",
+                meta_data={"error": True, "timestamp": datetime.utcnow().isoformat()},
             )
             self.current_conversation.messages.append(error_message)
-            self.emit("message_received", error_message)
+            self.emit("message_received", error_message.content, False)
 
-        # Atualiza a conversa no banco
-        self.current_conversation.updated_at = datetime.now()
-        self._save_conversation(self.current_conversation)
-        self.emit("conversation_updated", self.current_conversation)
+            # Salvar mensagem de erro
+            db.save_message(
+                error_message.id,
+                self.current_conversation.id,
+                error_message.role,
+                error_message.content,
+                error_message.meta_data,
+            )
+
+        finally:
+            # Emitir evento de fim do processamento
+            self.emit("processing_finished")
 
     def _save_conversation(self, conversation: Conversation) -> None:
         """
@@ -253,30 +315,21 @@ class AppController(EventEmitter):
             conversation: Conversa a ser salva
         """
         try:
-            # Salva a conversa
+            # Salva a conversa no banco de dados
             db.save_conversation(
                 conversation.id,
                 conversation.title,
-                conversation.messages[-1].content if conversation.messages else "",
+                conversation.meta_data,
             )
 
-            # Salva todas as mensagens da conversa
-            for message in conversation.messages:
-                if not hasattr(
-                    message, "_saved"
-                ):  # Evita salvar a mesma mensagem múltiplas vezes
-                    db.save_message(
-                        message.id,
-                        conversation.id,
-                        message.role,
-                        message.content,
-                        message.meta_data or {},
-                    )
-                    setattr(message, "_saved", True)
+            # Atualiza a lista de conversas se necessário
+            if conversation not in self.conversations:
+                self.conversations.append(conversation)
 
-            self.emit("conversation_updated", conversation)
+            logger.debug(f"Conversa {conversation.id} salva com sucesso")
         except Exception as e:
-            logger.error("Erro ao salvar conversa: %s", e)
+            logger.error(f"Erro ao salvar conversa: {e}")
+            self.emit("error", f"Erro ao salvar conversa: {e}")
 
     def _save_message(self, message: Message) -> None:
         """
@@ -538,4 +591,37 @@ class AppController(EventEmitter):
                 return session.query(ConversationType).filter_by(id=type_id).first()
         except Exception as e:
             logger.error(f"Erro ao buscar tipo de conversa: {e}")
+            return None
+
+    def add_file_to_knowledge_base(self, file_path: str) -> Optional[str]:
+        """
+        Adiciona um arquivo à base de conhecimento da conversa atual.
+
+        Args:
+            file_path: Caminho do arquivo
+
+        Returns:
+            ID do item criado ou None se falhar
+        """
+        try:
+            # Se não houver conversa atual, cria uma nova
+            if not self.current_conversation:
+                self.new_conversation()
+
+            # Se não houver base de conhecimento para a conversa, cria uma
+            bases = self.get_conversation_knowledge_bases()
+            if not bases:
+                base = self.create_conversation_knowledge_base(
+                    "Base de Conhecimento", "Base de conhecimento para a conversa atual"
+                )
+            else:
+                base = bases[0]
+
+            # Adiciona o arquivo à base
+            item_id = base.add_file(file_path)
+            self.emit("knowledge_base_updated", base)
+            return item_id
+
+        except Exception as e:
+            logger.error(f"Erro ao adicionar arquivo {file_path}: {e}")
             return None
