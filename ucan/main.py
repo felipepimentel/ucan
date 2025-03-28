@@ -37,6 +37,30 @@ check_dependencies()
 ctk.set_appearance_mode("System")  # Modos: "System" (padrão), "Dark", "Light"
 ctk.set_default_color_theme("blue")  # Temas: "blue" (padrão), "green", "dark-blue"
 
+# Definir algumas cores e estilos consistentes para a aplicação
+COLORS = {
+    "primary": "#1E88E5",
+    "primary_hover": "#1976D2",
+    "secondary": "#78909C",
+    "success": "#43A047",
+    "danger": "#E53935",
+    "warning": "#FFB300",
+    "background_light": "#F5F5F5",
+    "background_dark": "#2D2D2D",
+    "text_light": "#212121",
+    "text_dark": "#EEEEEE",
+}
+
+# Configurações consistentes de fonte
+FONTS = {
+    "heading": ctk.CTkFont(family="Helvetica", size=18, weight="bold"),
+    "subheading": ctk.CTkFont(family="Helvetica", size=16, weight="bold"),
+    "body": ctk.CTkFont(family="Helvetica", size=13),
+    "body_bold": ctk.CTkFont(family="Helvetica", size=13, weight="bold"),
+    "small": ctk.CTkFont(family="Helvetica", size=11),
+    "emoji": ctk.CTkFont(family="Segoe UI Emoji", size=16),
+}
+
 
 class ScrollableMessageFrame(ctk.CTkScrollableFrame):
     """Frame rolável customizado para exibir as mensagens do chat"""
@@ -647,32 +671,73 @@ class ChatApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        # Inicializar lista de bolhas de mensagem
+        # Inicializar listas e variáveis de estado
         self.message_bubbles = []
+        self.message_history = []
+        self.replying_to = None
+        self.typing_indicator = None
+
+        # Respostas do bot para demonstração
+        self.bot_responses = [
+            "Como posso ajudar você hoje?",
+            "Entendi. Você poderia fornecer mais detalhes?",
+            "Estou processando sua solicitação.",
+            "Isso é interessante! Conte-me mais.",
+            "Vou pesquisar sobre isso para você.",
+            "Claro, posso auxiliar com isso.",
+            "Preciso de algumas informações adicionais para continuar.",
+            "Sua solicitação foi recebida. Estou trabalhando nisso.",
+            "Obrigado por compartilhar isso comigo!",
+            "Vamos explorar algumas opções para resolver isso.",
+        ]
 
         # Configurar janela principal
         self.title("UCAN - Universal Conversational Assistant Navigator")
         self.geometry("1200x800")
         self.minsize(800, 600)
+        self.iconbitmap("assets/icon.ico") if os.path.exists(
+            "assets/icon.ico"
+        ) else None
 
         # Carregar configurações
         self.load_settings()
+        self.load_message_history()
 
         # Criar widgets
         self.create_widgets()
 
-        # Carregar histórico
+        # Carregar histórico na UI
         self.load_history_to_ui()
 
         # Configurar atalhos de teclado
         self.bind("<Control-Return>", lambda e: self.send_message())
         self.bind("<Control-l>", lambda e: self.clear_chat())
+        self.bind(
+            "<Escape>", lambda e: self.cancel_reply() if self.replying_to else None
+        )
+
+        # Adicionar mensagem de boas-vindas se não houver histórico
+        if not self.message_history:
+            self.add_message(
+                "ChatBot",
+                "Olá! Bem-vindo ao Chat Conversacional. Como posso ajudar você hoje?",
+            )
 
         # Centralizar janela
         self.center_window()
 
-        # Iniciar loop de eventos
-        self.mainloop()
+    def load_message_history(self):
+        """Carrega o histórico de mensagens do arquivo"""
+        try:
+            with open("chat_history.json", "r", encoding="utf-8") as f:
+                self.message_history = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.message_history = []
+
+    def save_message_history(self):
+        """Salva o histórico de mensagens no arquivo"""
+        with open("chat_history.json", "w", encoding="utf-8") as f:
+            json.dump(self.message_history, f, ensure_ascii=False, indent=2)
 
     def load_settings(self):
         """Carrega as configurações do usuário"""
@@ -710,7 +775,9 @@ class ChatApp(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
 
         # ==== BARRA LATERAL ====
-        self.sidebar = ctk.CTkFrame(self, width=200, corner_radius=0)
+        self.sidebar = ctk.CTkFrame(
+            self, width=250, corner_radius=0, fg_color=("gray90", "gray20")
+        )
         self.sidebar.grid(row=0, column=0, sticky="nsew", padx=0, pady=0)
         self.sidebar.grid_columnconfigure(0, weight=1)
         self.sidebar.grid_rowconfigure(1, weight=1)
@@ -718,7 +785,9 @@ class ChatApp(ctk.CTk):
         self.sidebar.grid_propagate(False)  # Impede que o frame encolha
 
         # Informações do usuário
-        self.profile_frame = ctk.CTkFrame(self.sidebar)
+        self.profile_frame = ctk.CTkFrame(
+            self.sidebar, corner_radius=10, fg_color=("gray85", "gray25")
+        )
         self.profile_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=10)
 
         # Avatar do usuário
@@ -735,17 +804,27 @@ class ChatApp(ctk.CTk):
         self.username_label = ctk.CTkLabel(
             self.user_info,
             text=self.user_settings["username"],
-            font=ctk.CTkFont(size=14, weight="bold"),
+            font=FONTS["body_bold"],
         )
         self.username_label.grid(row=0, column=0, sticky="w")
+
+        self.status_indicator = ctk.CTkFrame(
+            self.user_info,
+            width=10,
+            height=10,
+            corner_radius=5,
+            fg_color=COLORS["success"],
+        )
+        self.status_indicator.grid(row=1, column=0, sticky="w", padx=(0, 5))
+        self.status_indicator.grid_propagate(False)
 
         self.status_label = ctk.CTkLabel(
             self.user_info,
             text=self.user_settings["status"],
-            font=ctk.CTkFont(size=12),
+            font=FONTS["small"],
             text_color=("gray50", "gray70"),
         )
-        self.status_label.grid(row=1, column=0, sticky="w")
+        self.status_label.grid(row=1, column=0, sticky="w", padx=(15, 0))
 
         # Botão de configurações
         self.settings_button = ctk.CTkButton(
@@ -755,39 +834,110 @@ class ChatApp(ctk.CTk):
             command=self.open_profile_settings,
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
+            font=FONTS["emoji"],
         )
         self.settings_button.grid(row=0, column=2, padx=5)
 
-        # Lista de conversas (para futuras implementações de múltiplos chats)
-        self.conversations_frame = ctk.CTkScrollableFrame(self.sidebar)
-        self.conversations_frame.grid(
-            row=1, column=0, sticky="nsew", padx=10, pady=(0, 10)
+        # Barra de pesquisa
+        self.search_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
+        self.search_frame.grid(row=1, column=0, sticky="new", padx=10, pady=(0, 5))
+        self.search_frame.grid_columnconfigure(0, weight=1)
+
+        self.search_entry = ctk.CTkEntry(
+            self.search_frame,
+            placeholder_text="Pesquisar conversas...",
+            height=35,
+            corner_radius=17,
+            border_width=1,
+        )
+        self.search_entry.grid(row=0, column=0, sticky="ew", padx=0, pady=5)
+
+        # Título das conversas
+        self.conversations_title = ctk.CTkLabel(
+            self.sidebar, text="Conversas", font=FONTS["subheading"], anchor="w"
+        )
+        self.conversations_title.grid(
+            row=2, column=0, sticky="w", padx=15, pady=(10, 5)
         )
 
-        # Exemplo de conversas
-        chat_data = [
-            {"name": "ChatBot", "last_message": "Como posso ajudar?", "time": "Agora"},
-            {
-                "name": "Grupo de Projeto",
-                "last_message": "Reunião amanhã",
-                "time": "10:30",
-            },
-            {
-                "name": "Suporte Técnico",
-                "last_message": "Seu ticket foi resolvido",
-                "time": "Ontem",
-            },
-        ]
+        # Lista de conversas
+        self.conversations_frame = ctk.CTkScrollableFrame(
+            self.sidebar, fg_color="transparent"
+        )
+        self.conversations_frame.grid(
+            row=3, column=0, sticky="nsew", padx=10, pady=(0, 10)
+        )
+        self.conversations_frame.grid_columnconfigure(0, weight=1)
 
-        for i, chat in enumerate(chat_data):
-            chat_item = self.create_chat_item(self.conversations_frame, chat)
-            chat_item.pack(fill="x", pady=5)
+        # Preencher a lista de conversas
+        self.populate_conversation_list()
 
-        # Configurações do app
-        self.settings_frame = ctk.CTkFrame(self.sidebar)
-        self.settings_frame.grid(row=2, column=0, sticky="ew", padx=10, pady=10)
+        # Barra inferior com botões de ação
+        self.sidebar_bottom = ctk.CTkFrame(
+            self.sidebar, fg_color=("gray85", "gray25"), height=50
+        )
+        self.sidebar_bottom.grid(row=4, column=0, sticky="ew", padx=0, pady=0)
+        self.sidebar_bottom.grid_columnconfigure((0, 1, 2, 3), weight=1)
+        self.sidebar_bottom.grid_propagate(False)
+
+        # Botão de novo chat
+        self.new_chat_btn = ctk.CTkButton(
+            self.sidebar_bottom,
+            text="➕",
+            width=40,
+            height=40,
+            command=self.create_new_chat,
+            fg_color="transparent",
+            hover_color=("gray75", "gray35"),
+            font=FONTS["emoji"],
+        )
+        self.new_chat_btn.grid(row=0, column=0, padx=5, pady=5)
+
+        # Botão de tema
+        self.theme_mode = ctk.StringVar(value=ctk.get_appearance_mode())
+        self.theme_btn = ctk.CTkButton(
+            self.sidebar_bottom,
+            text="🌙" if self.theme_mode.get() == "Light" else "☀️",
+            width=40,
+            height=40,
+            command=self.toggle_theme,
+            fg_color="transparent",
+            hover_color=("gray75", "gray35"),
+            font=FONTS["emoji"],
+        )
+        self.theme_btn.grid(row=0, column=1, padx=5, pady=5)
+
+        # Botão de ajuda
+        self.help_btn = ctk.CTkButton(
+            self.sidebar_bottom,
+            text="❓",
+            width=40,
+            height=40,
+            command=self.show_help,
+            fg_color="transparent",
+            hover_color=("gray75", "gray35"),
+            font=FONTS["emoji"],
+        )
+        self.help_btn.grid(row=0, column=2, padx=5, pady=5)
+
+        # Botão de logout
+        self.logout_btn = ctk.CTkButton(
+            self.sidebar_bottom,
+            text="🚪",
+            width=40,
+            height=40,
+            command=self.confirm_logout,
+            fg_color="transparent",
+            hover_color=("gray75", "gray35"),
+            font=FONTS["emoji"],
+        )
+        self.logout_btn.grid(row=0, column=3, padx=5, pady=5)
 
         # ==== ÁREA PRINCIPAL ====
+        self.setup_main_area()
+
+    def setup_main_area(self):
+        """Configura a área principal do chat"""
         self.main_frame = ctk.CTkFrame(self, corner_radius=0)
         self.main_frame.grid(row=0, column=1, sticky="nsew", padx=0, pady=0)
         self.main_frame.grid_columnconfigure(0, weight=1)
@@ -796,59 +946,120 @@ class ChatApp(ctk.CTk):
         self.main_frame.grid_rowconfigure(2, weight=0)  # Área de resposta
         self.main_frame.grid_rowconfigure(3, weight=0)  # Área de entrada
 
-        # Cabeçalho
+        # Cabeçalho com design melhorado
         self.header_frame = ctk.CTkFrame(
-            self.main_frame, height=60, fg_color=("gray85", "gray25")
+            self.main_frame, height=70, fg_color=("gray90", "gray25"), corner_radius=0
         )
         self.header_frame.grid(row=0, column=0, sticky="ew")
-        self.header_frame.grid_columnconfigure(0, weight=1)
+        self.header_frame.grid_columnconfigure(1, weight=1)
         self.header_frame.grid_propagate(False)  # Impede que o frame encolha
 
-        self.chat_title = ctk.CTkLabel(
-            self.header_frame, text="ChatBot", font=ctk.CTkFont(size=18, weight="bold")
+        # Avatar do contato atual
+        self.chat_avatar = ctk.CTkLabel(
+            self.header_frame,
+            text="C",
+            width=40,
+            height=40,
+            fg_color=COLORS["primary"],
+            text_color=("white", "white"),
+            corner_radius=20,
+            font=FONTS["body_bold"],
         )
-        self.chat_title.place(relx=0.5, rely=0.5, anchor="center")
+        self.chat_avatar.grid(row=0, column=0, padx=(20, 10), pady=15)
+
+        # Informações do contato
+        self.chat_info = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        self.chat_info.grid(row=0, column=1, sticky="w", pady=10)
+
+        self.chat_title = ctk.CTkLabel(
+            self.chat_info, text="ChatBot", font=FONTS["heading"]
+        )
+        self.chat_title.grid(row=0, column=0, sticky="w")
+
+        self.chat_status = ctk.CTkLabel(
+            self.chat_info,
+            text="Online",
+            font=FONTS["small"],
+            text_color=("gray50", "gray70"),
+        )
+        self.chat_status.grid(row=1, column=0, sticky="w")
+
+        # Botões do cabeçalho
+        self.header_buttons = ctk.CTkFrame(self.header_frame, fg_color="transparent")
+        self.header_buttons.grid(row=0, column=2, padx=20)
+
+        # Botão de chamada
+        self.call_button = ctk.CTkButton(
+            self.header_buttons,
+            text="📞",
+            width=40,
+            command=lambda: self.show_feature_unavailable("Chamadas"),
+            fg_color="transparent",
+            hover_color=("gray80", "gray30"),
+            font=FONTS["emoji"],
+        )
+        self.call_button.grid(row=0, column=0, padx=5)
+
+        # Botão de videochamada
+        self.video_button = ctk.CTkButton(
+            self.header_buttons,
+            text="🎥",
+            width=40,
+            command=lambda: self.show_feature_unavailable("Videochamadas"),
+            fg_color="transparent",
+            hover_color=("gray80", "gray30"),
+            font=FONTS["emoji"],
+        )
+        self.video_button.grid(row=0, column=1, padx=5)
 
         # Botão de pesquisa
         self.search_button = ctk.CTkButton(
-            self.header_frame,
+            self.header_buttons,
             text="🔍",
             width=40,
             command=self.open_search,
             fg_color="transparent",
-            hover_color=("gray75", "gray35"),
+            hover_color=("gray80", "gray30"),
+            font=FONTS["emoji"],
         )
-        self.search_button.place(relx=0.95, rely=0.5, anchor="e")
+        self.search_button.grid(row=0, column=2, padx=5)
 
         # Botão de limpar chat
         self.clear_button = ctk.CTkButton(
-            self.header_frame,
+            self.header_buttons,
             text="🗑️",
             width=40,
             command=self.confirm_clear_chat,
             fg_color="transparent",
-            hover_color=("gray75", "gray35"),
+            hover_color=("gray80", "gray30"),
+            font=FONTS["emoji"],
         )
-        self.clear_button.place(relx=0.90, rely=0.5, anchor="e")
+        self.clear_button.grid(row=0, column=3, padx=5)
 
-        # Frame rolável para mensagens
+        # Frame rolável para mensagens com visual melhorado
         self.chat_frame = ScrollableMessageFrame(
-            self.main_frame, fg_color="transparent"
+            self.main_frame, fg_color=("gray95", "gray15"), corner_radius=0
         )
-        self.chat_frame.grid(row=1, column=0, sticky="nsew", padx=15, pady=10)
+        self.chat_frame.grid(row=1, column=0, sticky="nsew", padx=0, pady=0)
 
         # Frame para resposta (inicialmente oculto)
-        self.reply_frame = ctk.CTkFrame(self.main_frame, fg_color=("gray80", "gray30"))
+        self.reply_frame = ctk.CTkFrame(
+            self.main_frame,
+            fg_color=("gray85", "gray30"),
+            corner_radius=10,
+            border_width=1,
+            border_color=("gray75", "gray40"),
+        )
         self.reply_frame.grid(row=2, column=0, sticky="ew", padx=15, pady=(0, 10))
         self.reply_frame.grid_remove()  # Oculto inicialmente
 
         self.reply_label = ctk.CTkLabel(
-            self.reply_frame, text="Respondendo a:", font=ctk.CTkFont(size=12)
+            self.reply_frame, text="Respondendo a:", font=FONTS["small"]
         )
         self.reply_label.pack(side="left", padx=10, pady=5)
 
         self.reply_content = ctk.CTkLabel(
-            self.reply_frame, text="", font=ctk.CTkFont(size=12), wraplength=300
+            self.reply_frame, text="", font=FONTS["small"], wraplength=300
         )
         self.reply_content.pack(side="left", padx=5, pady=5, fill="x", expand=True)
 
@@ -860,72 +1071,12 @@ class ChatApp(ctk.CTk):
             command=self.cancel_reply,
             fg_color="transparent",
             hover_color=("gray70", "gray40"),
+            font=FONTS["small"],
         )
         self.cancel_reply_button.pack(side="right", padx=10, pady=5)
 
-        # Frame para área de entrada
-        self.input_frame = ctk.CTkFrame(
-            self.main_frame, fg_color=self.main_frame.cget("fg_color")
-        )
-        self.input_frame.grid(row=3, column=0, sticky="ew", padx=15, pady=(0, 15))
-        self.input_frame.grid_columnconfigure(0, weight=1)
-
-        # Área de entrada expandida com mais recursos
-        self.input_area = ctk.CTkFrame(self.input_frame)
-        self.input_area.grid(row=0, column=0, sticky="ew")
-        self.input_area.grid_columnconfigure(1, weight=1)
-
-        # Botão para anexos
-        self.attach_button = ctk.CTkButton(
-            self.input_area,
-            text="📎",
-            width=40,
-            command=self.attach_file,
-            fg_color="transparent",
-            hover_color=("gray80", "gray30"),
-        )
-        self.attach_button.grid(row=0, column=0, padx=(5, 0), pady=5)
-
-        # Campo de entrada de texto
-        self.input_textbox = ctk.CTkTextbox(
-            self.input_area,
-            height=70,
-            wrap="word",
-            border_width=1,
-            border_color=("gray70", "gray40"),
-            corner_radius=10,
-        )
-        self.input_textbox.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
-        self.input_textbox.bind("<Return>", self.on_enter_pressed)
-        self.input_textbox.bind(
-            "<Shift-Return>", lambda e: None
-        )  # Permite quebra de linha com Shift+Enter
-
-        # Frame para botões de ação
-        self.action_frame = ctk.CTkFrame(self.input_area, fg_color="transparent")
-        self.action_frame.grid(row=0, column=2, padx=(0, 5), pady=5)
-
-        # Botão de emoji
-        self.emoji_button = ctk.CTkButton(
-            self.action_frame,
-            text="😊",
-            width=40,
-            command=self.show_emoji_selector,
-            fg_color="transparent",
-            hover_color=("gray80", "gray30"),
-            font=ctk.CTkFont(size=16),
-        )
-        self.emoji_button.grid(row=0, column=0, padx=2, pady=5)
-
-        # Botão de enviar
-        self.send_button = ctk.CTkButton(
-            self.action_frame,
-            text="➤",
-            width=40,
-            command=self.send_message,
-            font=ctk.CTkFont(size=16, weight="bold"),
-        )
-        self.send_button.grid(row=0, column=1, padx=2, pady=5)
+        # Área de entrada com design moderno
+        self.setup_input_area()
 
     def update_user_avatar(self):
         """Atualiza o avatar do usuário"""
@@ -1363,6 +1514,152 @@ class ChatApp(ctk.CTk):
         self.username_label.configure(text=profile_data["username"])
         self.status_label.configure(text=profile_data["status"])
         self.update_user_avatar()
+
+    def setup_input_area(self):
+        """Configura a área de entrada de mensagens"""
+        # Frame para área de entrada
+        self.input_frame = ctk.CTkFrame(
+            self.main_frame, fg_color=("gray90", "gray25"), corner_radius=0, height=100
+        )
+        self.input_frame.grid(row=3, column=0, sticky="ew", padx=0, pady=0)
+        self.input_frame.grid_columnconfigure(0, weight=1)
+        self.input_frame.grid_propagate(False)
+
+        # Área de entrada redesenhada
+        self.input_area = ctk.CTkFrame(
+            self.input_frame,
+            fg_color=("gray95", "gray20"),
+            corner_radius=15,
+            border_width=1,
+            border_color=("gray80", "gray35"),
+        )
+        self.input_area.grid(row=0, column=0, sticky="ew", padx=20, pady=15)
+        self.input_area.grid_columnconfigure(1, weight=1)
+
+        # Botões à esquerda
+        self.left_buttons = ctk.CTkFrame(self.input_area, fg_color="transparent")
+        self.left_buttons.grid(row=0, column=0, padx=(10, 0), pady=5)
+
+        # Botão para anexos
+        self.attach_button = ctk.CTkButton(
+            self.left_buttons,
+            text="📎",
+            width=35,
+            height=35,
+            command=self.attach_file,
+            fg_color="transparent",
+            hover_color=("gray85", "gray30"),
+            font=FONTS["emoji"],
+        )
+        self.attach_button.grid(row=0, column=0, padx=2)
+
+        # Botão para gravação de áudio
+        self.audio_button = ctk.CTkButton(
+            self.left_buttons,
+            text="🎤",
+            width=35,
+            height=35,
+            command=lambda: self.show_feature_unavailable("Gravação de Áudio"),
+            fg_color="transparent",
+            hover_color=("gray85", "gray30"),
+            font=FONTS["emoji"],
+        )
+        self.audio_button.grid(row=0, column=1, padx=2)
+
+        # Campo de entrada de texto com visual melhorado
+        self.input_textbox = ctk.CTkTextbox(
+            self.input_area,
+            height=70,
+            wrap="word",
+            fg_color="transparent",
+            corner_radius=10,
+            font=FONTS["body"],
+            activate_scrollbars=False,
+        )
+        self.input_textbox.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
+        self.input_textbox.bind("<Return>", self.on_enter_pressed)
+        self.input_textbox.bind(
+            "<Shift-Return>", lambda e: None
+        )  # Permite quebra de linha com Shift+Enter
+        self.input_textbox.insert("1.0", "")  # Texto inicial vazio
+
+        # Placeholder para o input
+        self.input_placeholder = "Digite uma mensagem..."
+        self.show_input_placeholder()
+        self.input_textbox.bind("<FocusIn>", self.on_input_focus_in)
+        self.input_textbox.bind("<FocusOut>", self.on_input_focus_out)
+
+        # Botões à direita
+        self.right_buttons = ctk.CTkFrame(self.input_area, fg_color="transparent")
+        self.right_buttons.grid(row=0, column=2, padx=(0, 10), pady=5)
+
+        # Botão de emoji
+        self.emoji_button = ctk.CTkButton(
+            self.right_buttons,
+            text="😊",
+            width=35,
+            height=35,
+            command=self.show_emoji_selector,
+            fg_color="transparent",
+            hover_color=("gray85", "gray30"),
+            font=FONTS["emoji"],
+        )
+        self.emoji_button.grid(row=0, column=0, padx=2)
+
+        # Botão de enviar
+        self.send_button = ctk.CTkButton(
+            self.right_buttons,
+            text="➤",
+            width=35,
+            height=35,
+            command=self.send_message,
+            fg_color=COLORS["primary"],
+            hover_color=COLORS["primary_hover"],
+            font=FONTS["emoji"],
+            corner_radius=17,
+        )
+        self.send_button.grid(row=0, column=1, padx=2)
+
+    def show_input_placeholder(self):
+        """Mostra o placeholder no campo de input"""
+        current_text = self.input_textbox.get("1.0", "end-1c")
+        if not current_text:
+            self.input_textbox.insert("1.0", self.input_placeholder)
+            self.input_textbox.configure(text_color=("gray60", "gray60"))
+
+    def on_input_focus_in(self, event):
+        """Limpa o placeholder quando o input recebe foco"""
+        current_text = self.input_textbox.get("1.0", "end-1c")
+        if current_text == self.input_placeholder:
+            self.input_textbox.delete("1.0", "end")
+            self.input_textbox.configure(text_color=("gray10", "gray90"))
+
+    def on_input_focus_out(self, event):
+        """Restaura o placeholder quando o input perde foco"""
+        current_text = self.input_textbox.get("1.0", "end-1c")
+        if not current_text:
+            self.show_input_placeholder()
+
+    def show_feature_unavailable(self, feature_name):
+        """Exibe notificação de recurso não disponível"""
+        notification = ctk.CTkToplevel(self)
+        notification.title("Recurso Indisponível")
+        notification.geometry("350x150")
+        notification.resizable(False, False)
+        notification.grab_set()
+
+        label = ctk.CTkLabel(
+            notification,
+            text=f"O recurso '{feature_name}' não está\ndisponível na versão atual.",
+            font=FONTS["body"],
+            justify="center",
+        )
+        label.pack(pady=(30, 20))
+
+        ok_button = ctk.CTkButton(
+            notification, text="OK", command=notification.destroy, width=100
+        )
+        ok_button.pack(pady=10)
 
 
 def main():
