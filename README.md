@@ -1,25 +1,27 @@
-# UCAN - Um Assistente de IA Conversacional
+# UCAN Chat
 
-UCAN é um assistente de IA conversacional para ajudar em tarefas de programação, construído com Python e Dear PyGui.
+Um aplicativo de chat moderno e elegante desenvolvido com Python e CustomTkinter.
 
 ## Características
 
 - Interface moderna e responsiva
-- Temas personalizáveis
-- Suporte a múltiplas conversas
-- Bases de conhecimento integradas
-- Integração com modelos de IA
+- Suporte a emojis
+- Configurações de perfil
+- Histórico de mensagens
+- Temas claro e escuro
+- Notificações
+- Som
 
 ## Requisitos
 
-- Python 3.10 ou superior
+- Python 3.9 ou superior
 - Poetry para gerenciamento de dependências
 
 ## Instalação
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/ucan.git
+git clone https://github.com/pimenta/ucan.git
 cd ucan
 ```
 
@@ -28,57 +30,31 @@ cd ucan
 poetry install
 ```
 
-## Uso
+## Execução
 
-1. Inicie a aplicação:
+Para executar o aplicativo:
+
 ```bash
 poetry run ucan
-```
-
-2. Ou execute o exemplo:
-```bash
-poetry run python examples/chat_app.py
-```
-
-## Desenvolvimento
-
-1. Instale as dependências de desenvolvimento:
-```bash
-poetry install --with dev
-```
-
-2. Execute os testes:
-```bash
-poetry run pytest
-```
-
-3. Verifique a qualidade do código:
-```bash
-poetry run black .
-poetry run isort .
-poetry run mypy .
-poetry run pylint ucan
 ```
 
 ## Estrutura do Projeto
 
 ```
 ucan/
-├── config/           # Configurações
-├── core/            # Lógica principal
-├── ui/              # Interface do usuário
-├── examples/        # Exemplos de uso
-├── tests/           # Testes
-└── resources/       # Recursos (ícones, temas, etc.)
+├── __init__.py
+├── main.py
+├── chat.py
+├── ui.py
+├── constants.py
+└── helpers.py
 ```
 
-## Contribuindo
-
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -am 'Adiciona nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Crie um Pull Request
+- `main.py`: Ponto de entrada e lógica principal
+- `chat.py`: Lógica do chat e mensagens
+- `ui.py`: Componentes da interface
+- `constants.py`: Constantes e configurações
+- `helpers.py`: Funções utilitárias
 
 ## Licença
 

@@ -1,47 +1,30 @@
 [tool.poetry]
 name = "ucan"
 version = "0.1.0"
-description = "UCAN - Universal Conversational Assistant Navigator"
-authors = ["Your Name <your.email@example.com>"]
+description = "Um aplicativo de chat moderno e elegante"
+authors = ["Pimenta <pimenta@example.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "ucan" }]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-qasync = "^0.27.0"
-openai = "^1.1.1"
-anthropic = "^0.5.0"
-python-dotenv = "^1.0.0"
-httpx = "^0.24.1"
-requests = "^2.30.0"
-watchdog = "^6.0.0"
-markdown = "^3.5.0"
-duckdb = "^0.10.0"
-pyside6 = "^6.8.2.1"
-dearpygui = "^1.10.1"
-pyyaml = "^6.0.1"
-sqlalchemy = "^2.0.27"
-alembic = "^1.13.1"
-pillow = "^11.1.0"
-cairosvg = "^2.7.1"
+python = ">=3.9,<3.13"
 customtkinter = "^5.2.2"
+pillow = "^11.1.0"
+plyer = "^2.1.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.2.0"
-isort = "^5.13.2"
-mypy = "^1.8.0"
-pylint = "^3.1.0"
-pytest = "^8.0.2"
-pytest-qt = "^4.4.0"
-pytest-cov = "^4.1.0"
-pytest-asyncio = "^0.23.5"
+black = "^25.1.0"
+isort = "^6.0.1"
+mypy = "^1.15.0"
+pylint = "^3.3.6"
+pytest = "^8.3.5"
 
 [tool.poetry.scripts]
 ucan = "ucan.main:main"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
