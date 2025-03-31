@@ -51,16 +51,6 @@ COLORS = {
     "text_dark": "#EEEEEE",
 }
 
-# Configurações consistentes de fonte
-FONTS = {
-    "heading": ctk.CTkFont(family="Helvetica", size=18, weight="bold"),
-    "subheading": ctk.CTkFont(family="Helvetica", size=16, weight="bold"),
-    "body": ctk.CTkFont(family="Helvetica", size=13),
-    "body_bold": ctk.CTkFont(family="Helvetica", size=13, weight="bold"),
-    "small": ctk.CTkFont(family="Helvetica", size=11),
-    "emoji": ctk.CTkFont(family="Segoe UI Emoji", size=16),
-}
-
 
 class ScrollableMessageFrame(ctk.CTkScrollableFrame):
     """Frame rolável customizado para exibir as mensagens do chat"""
@@ -665,17 +655,200 @@ class ReactionSelector(ctk.CTkToplevel):
         self.destroy()
 
 
+class LoadingScreen(ctk.CTkToplevel):
+    def __init__(self, master):
+        super().__init__(master)
+        self.title("UCAN")
+        self.geometry("300x200")
+        self.resizable(False, False)
+        self.transient(master)
+        self.grab_set()
+
+        # Center the window
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (self.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
+
+        # Loading text
+        self.loading_label = ctk.CTkLabel(
+            self, text="Carregando UCAN...", font=ctk.CTkFont(size=16, weight="bold")
+        )
+        self.loading_label.pack(pady=(40, 20))
+
+        # Progress bar
+        self.progress = ctk.CTkProgressBar(self)
+        self.progress.pack(pady=20, padx=40, fill="x")
+        self.progress.set(0)
+
+        # Status text
+        self.status_label = ctk.CTkLabel(
+            self, text="Inicializando...", font=ctk.CTkFont(size=12)
+        )
+        self.status_label.pack(pady=10)
+
+        # Start loading animation
+        self.loading_steps = [
+            "Carregando configurações...",
+            "Inicializando interface...",
+            "Preparando chat...",
+            "Pronto!",
+        ]
+        self.current_step = 0
+        self.animate_loading()
+
+    def animate_loading(self):
+        if self.current_step < len(self.loading_steps):
+            self.status_label.configure(text=self.loading_steps[self.current_step])
+            self.progress.set((self.current_step + 1) / len(self.loading_steps))
+            self.current_step += 1
+            self.after(500, self.animate_loading)
+        else:
+            self.destroy()
+
+
+class Notification(ctk.CTkToplevel):
+    def __init__(self, master, message, type="info"):
+        super().__init__(master)
+        self.title("")
+        self.geometry("300x80")
+        self.resizable(False, False)
+        self.overrideredirect(True)  # Remove window decorations
+
+        # Position at top-right corner
+        self.update_idletasks()
+        x = master.winfo_screenwidth() - self.winfo_width() - 20
+        y = 20
+        self.geometry(f"+{x}+{y}")
+
+        # Colors based on type
+        colors = {
+            "info": ("#2196F3", "#1976D2"),
+            "success": ("#4CAF50", "#388E3C"),
+            "warning": ("#FFC107", "#FFA000"),
+            "error": ("#F44336", "#D32F2F"),
+        }
+        bg_color, hover_color = colors.get(type, colors["info"])
+
+        # Main frame
+        self.frame = ctk.CTkFrame(
+            self,
+            fg_color=bg_color,
+            corner_radius=10,
+            border_width=1,
+            border_color=hover_color,
+        )
+        self.frame.pack(fill="both", expand=True, padx=2, pady=2)
+
+        # Message
+        self.message_label = ctk.CTkLabel(
+            self.frame, text=message, font=ctk.CTkFont(size=12), text_color="white"
+        )
+        self.message_label.pack(pady=10, padx=15)
+
+        # Close button
+        self.close_button = ctk.CTkButton(
+            self.frame,
+            text="×",
+            width=20,
+            height=20,
+            command=self.destroy,
+            fg_color="transparent",
+            hover_color=hover_color,
+            text_color="white",
+            font=ctk.CTkFont(size=16, weight="bold"),
+        )
+        self.close_button.place(relx=1.0, rely=0.0, x=-10, y=10, anchor="ne")
+
+        # Auto-close after 5 seconds
+        self.after(5000, self.destroy)
+
+        # Fade in animation
+        self.attributes("-alpha", 0.0)
+        self.fade_in()
+
+    def fade_in(self):
+        alpha = self.attributes("-alpha")
+        if alpha < 1.0:
+            alpha += 0.1
+            self.attributes("-alpha", alpha)
+            self.after(50, self.fade_in)
+
+
+class TypingIndicator(ctk.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, fg_color="transparent", **kwargs)
+
+        # Container for dots
+        self.dots_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.dots_frame.pack(pady=5)
+
+        # Create three dots
+        self.dots = []
+        for i in range(3):
+            dot = ctk.CTkLabel(
+                self.dots_frame,
+                text="•",
+                font=ctk.CTkFont(size=20),
+                text_color=("gray40", "gray70"),
+            )
+            dot.pack(side="left", padx=2)
+            self.dots.append(dot)
+
+        # Start animation
+        self.current_dot = 0
+        self.animate()
+
+    def animate(self):
+        """Animates the typing indicator dots"""
+        for i, dot in enumerate(self.dots):
+            if i == self.current_dot:
+                dot.configure(text_color=("gray20", "gray90"))
+            else:
+                dot.configure(text_color=("gray40", "gray70"))
+
+        self.current_dot = (self.current_dot + 1) % 3
+        self.after(500, self.animate)
+
+
 class ChatApp(ctk.CTk):
     """Classe principal da aplicação de chat"""
 
     def __init__(self):
         super().__init__()
 
-        # Inicializar listas e variáveis de estado
+        # Configurar janela principal
+        self.title("UCAN - Universal Conversational Assistant Navigator")
+        self.geometry("1200x800")
+        self.minsize(800, 600)
+
+        # Configurações de fonte
+        self.FONTS = {
+            "heading": ctk.CTkFont(family="Helvetica", size=18, weight="bold"),
+            "subheading": ctk.CTkFont(family="Helvetica", size=16, weight="bold"),
+            "body": ctk.CTkFont(family="Helvetica", size=13),
+            "body_bold": ctk.CTkFont(family="Helvetica", size=13, weight="bold"),
+            "small": ctk.CTkFont(family="Helvetica", size=11),
+            "emoji": ctk.CTkFont(family="Segoe UI Emoji", size=16),
+        }
+
+        # Inicializar variáveis
+        self.notifications = []
+        self.typing_indicator = None
         self.message_bubbles = []
         self.message_history = []
         self.replying_to = None
-        self.typing_indicator = None
+        self.conversations_frame = None
+        self.chat_frame = None
+        self.input_textbox = None
+        self.theme_btn = None
+        self.user_settings = None
+
+        # Carregar configurações
+        self.load_settings()
+        self.load_message_history()
 
         # Respostas do bot para demonstração
         self.bot_responses = [
@@ -691,23 +864,16 @@ class ChatApp(ctk.CTk):
             "Vamos explorar algumas opções para resolver isso.",
         ]
 
-        # Configurar janela principal
-        self.title("UCAN - Universal Conversational Assistant Navigator")
-        self.geometry("1200x800")
-        self.minsize(800, 600)
-        self.iconbitmap("assets/icon.ico") if os.path.exists(
-            "assets/icon.ico"
-        ) else None
-
-        # Carregar configurações
-        self.load_settings()
-        self.load_message_history()
+        # Configurar grid principal
+        self.grid_columnconfigure(0, weight=0)  # Barra lateral
+        self.grid_columnconfigure(1, weight=1)  # Área principal
+        self.grid_rowconfigure(0, weight=1)
 
         # Criar widgets
         self.create_widgets()
 
         # Carregar histórico na UI
-        self.load_history_to_ui()
+        self.after(100, self.load_history_to_ui)
 
         # Configurar atalhos de teclado
         self.bind("<Control-Return>", lambda e: self.send_message())
@@ -718,26 +884,16 @@ class ChatApp(ctk.CTk):
 
         # Adicionar mensagem de boas-vindas se não houver histórico
         if not self.message_history:
-            self.add_message(
-                "ChatBot",
-                "Olá! Bem-vindo ao Chat Conversacional. Como posso ajudar você hoje?",
+            self.after(
+                200,
+                lambda: self.add_message(
+                    "ChatBot",
+                    "Olá! Bem-vindo ao Chat Conversacional. Como posso ajudar você hoje?",
+                ),
             )
 
         # Centralizar janela
         self.center_window()
-
-    def load_message_history(self):
-        """Carrega o histórico de mensagens do arquivo"""
-        try:
-            with open("chat_history.json", "r", encoding="utf-8") as f:
-                self.message_history = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.message_history = []
-
-    def save_message_history(self):
-        """Salva o histórico de mensagens no arquivo"""
-        with open("chat_history.json", "w", encoding="utf-8") as f:
-            json.dump(self.message_history, f, ensure_ascii=False, indent=2)
 
     def load_settings(self):
         """Carrega as configurações do usuário"""
@@ -757,9 +913,53 @@ class ChatApp(ctk.CTk):
                 with open(settings_file, "r", encoding="utf-8") as f:
                     self.user_settings = json.load(f)
             except:
-                self.user_settings = default_settings
+                self.user_settings = default_settings.copy()
         else:
-            self.user_settings = default_settings
+            self.user_settings = default_settings.copy()
+
+    def populate_conversation_list(self):
+        """Preenche a lista de conversas com chats de exemplo"""
+        # Lista de conversas de exemplo
+        example_chats = [
+            {
+                "name": "ChatBot",
+                "last_message": "Como posso ajudar você hoje?",
+                "time": "Agora",
+            },
+            {
+                "name": "Suporte Técnico",
+                "last_message": "Vou verificar isso para você.",
+                "time": "10:30",
+            },
+            {
+                "name": "Vendas",
+                "last_message": "Obrigado pelo seu interesse!",
+                "time": "Ontem",
+            },
+            {
+                "name": "Marketing",
+                "last_message": "Confira nossas novidades!",
+                "time": "Ontem",
+            },
+        ]
+
+        # Adicionar cada chat à lista
+        for chat in example_chats:
+            chat_item = self.create_chat_item(self.conversations_frame, chat)
+            chat_item.pack(fill="x", padx=5, pady=2)
+
+    def load_message_history(self):
+        """Carrega o histórico de mensagens do arquivo"""
+        try:
+            with open("chat_history.json", "r", encoding="utf-8") as f:
+                self.message_history = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.message_history = []
+
+    def save_message_history(self):
+        """Salva o histórico de mensagens no arquivo"""
+        with open("chat_history.json", "w", encoding="utf-8") as f:
+            json.dump(self.message_history, f, ensure_ascii=False, indent=2)
 
     def save_settings(self):
         """Salva as configurações do usuário"""
@@ -804,7 +1004,7 @@ class ChatApp(ctk.CTk):
         self.username_label = ctk.CTkLabel(
             self.user_info,
             text=self.user_settings["username"],
-            font=FONTS["body_bold"],
+            font=self.FONTS["body_bold"],
         )
         self.username_label.grid(row=0, column=0, sticky="w")
 
@@ -821,7 +1021,7 @@ class ChatApp(ctk.CTk):
         self.status_label = ctk.CTkLabel(
             self.user_info,
             text=self.user_settings["status"],
-            font=FONTS["small"],
+            font=self.FONTS["small"],
             text_color=("gray50", "gray70"),
         )
         self.status_label.grid(row=1, column=0, sticky="w", padx=(15, 0))
@@ -834,7 +1034,7 @@ class ChatApp(ctk.CTk):
             command=self.open_profile_settings,
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.settings_button.grid(row=0, column=2, padx=5)
 
@@ -854,7 +1054,7 @@ class ChatApp(ctk.CTk):
 
         # Título das conversas
         self.conversations_title = ctk.CTkLabel(
-            self.sidebar, text="Conversas", font=FONTS["subheading"], anchor="w"
+            self.sidebar, text="Conversas", font=self.FONTS["subheading"], anchor="w"
         )
         self.conversations_title.grid(
             row=2, column=0, sticky="w", padx=15, pady=(10, 5)
@@ -889,7 +1089,7 @@ class ChatApp(ctk.CTk):
             command=self.create_new_chat,
             fg_color="transparent",
             hover_color=("gray75", "gray35"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.new_chat_btn.grid(row=0, column=0, padx=5, pady=5)
 
@@ -903,7 +1103,7 @@ class ChatApp(ctk.CTk):
             command=self.toggle_theme,
             fg_color="transparent",
             hover_color=("gray75", "gray35"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.theme_btn.grid(row=0, column=1, padx=5, pady=5)
 
@@ -916,7 +1116,7 @@ class ChatApp(ctk.CTk):
             command=self.show_help,
             fg_color="transparent",
             hover_color=("gray75", "gray35"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.help_btn.grid(row=0, column=2, padx=5, pady=5)
 
@@ -929,7 +1129,7 @@ class ChatApp(ctk.CTk):
             command=self.confirm_logout,
             fg_color="transparent",
             hover_color=("gray75", "gray35"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.logout_btn.grid(row=0, column=3, padx=5, pady=5)
 
@@ -963,7 +1163,7 @@ class ChatApp(ctk.CTk):
             fg_color=COLORS["primary"],
             text_color=("white", "white"),
             corner_radius=20,
-            font=FONTS["body_bold"],
+            font=self.FONTS["body_bold"],
         )
         self.chat_avatar.grid(row=0, column=0, padx=(20, 10), pady=15)
 
@@ -972,14 +1172,14 @@ class ChatApp(ctk.CTk):
         self.chat_info.grid(row=0, column=1, sticky="w", pady=10)
 
         self.chat_title = ctk.CTkLabel(
-            self.chat_info, text="ChatBot", font=FONTS["heading"]
+            self.chat_info, text="ChatBot", font=self.FONTS["heading"]
         )
         self.chat_title.grid(row=0, column=0, sticky="w")
 
         self.chat_status = ctk.CTkLabel(
             self.chat_info,
             text="Online",
-            font=FONTS["small"],
+            font=self.FONTS["small"],
             text_color=("gray50", "gray70"),
         )
         self.chat_status.grid(row=1, column=0, sticky="w")
@@ -996,7 +1196,7 @@ class ChatApp(ctk.CTk):
             command=lambda: self.show_feature_unavailable("Chamadas"),
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.call_button.grid(row=0, column=0, padx=5)
 
@@ -1008,7 +1208,7 @@ class ChatApp(ctk.CTk):
             command=lambda: self.show_feature_unavailable("Videochamadas"),
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.video_button.grid(row=0, column=1, padx=5)
 
@@ -1020,7 +1220,7 @@ class ChatApp(ctk.CTk):
             command=self.open_search,
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.search_button.grid(row=0, column=2, padx=5)
 
@@ -1032,7 +1232,7 @@ class ChatApp(ctk.CTk):
             command=self.confirm_clear_chat,
             fg_color="transparent",
             hover_color=("gray80", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.clear_button.grid(row=0, column=3, padx=5)
 
@@ -1054,12 +1254,12 @@ class ChatApp(ctk.CTk):
         self.reply_frame.grid_remove()  # Oculto inicialmente
 
         self.reply_label = ctk.CTkLabel(
-            self.reply_frame, text="Respondendo a:", font=FONTS["small"]
+            self.reply_frame, text="Respondendo a:", font=self.FONTS["small"]
         )
         self.reply_label.pack(side="left", padx=10, pady=5)
 
         self.reply_content = ctk.CTkLabel(
-            self.reply_frame, text="", font=FONTS["small"], wraplength=300
+            self.reply_frame, text="", font=self.FONTS["small"], wraplength=300
         )
         self.reply_content.pack(side="left", padx=5, pady=5, fill="x", expand=True)
 
@@ -1071,7 +1271,7 @@ class ChatApp(ctk.CTk):
             command=self.cancel_reply,
             fg_color="transparent",
             hover_color=("gray70", "gray40"),
-            font=FONTS["small"],
+            font=self.FONTS["small"],
         )
         self.cancel_reply_button.pack(side="right", padx=10, pady=5)
 
@@ -1128,39 +1328,58 @@ class ChatApp(ctk.CTk):
 
     def create_chat_item(self, master, chat_data):
         """Cria um item de chat para a lista de conversas"""
-        frame = ctk.CTkFrame(master)
+        frame = ctk.CTkFrame(master, fg_color="transparent")
         frame.bind("<Button-1>", lambda e: self.select_chat(chat_data["name"]))
 
-        # Nome da conversa
-        name_label = ctk.CTkLabel(
+        # Avatar do chat
+        avatar_size = 40
+        avatar_frame = ctk.CTkFrame(
             frame,
-            text=chat_data["name"],
-            font=ctk.CTkFont(size=14, weight="bold"),
-            anchor="w",
+            width=avatar_size,
+            height=avatar_size,
+            fg_color=COLORS["primary"],
+            corner_radius=20,
         )
-        name_label.pack(anchor="w", padx=10, pady=(5, 0))
+        avatar_frame.grid(row=0, column=0, rowspan=2, padx=(10, 5), pady=5)
+        avatar_frame.grid_propagate(False)
 
-        # Última mensagem e hora
+        avatar_label = ctk.CTkLabel(
+            avatar_frame,
+            text=chat_data["name"][0].upper(),
+            text_color="white",
+            font=self.FONTS["body_bold"],
+        )
+        avatar_label.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Informações do chat
         info_frame = ctk.CTkFrame(frame, fg_color="transparent")
-        info_frame.pack(fill="x", padx=10, pady=(0, 5))
-        info_frame.grid_columnconfigure(0, weight=1)
+        info_frame.grid(row=0, column=1, sticky="nsew", padx=5)
+        frame.grid_columnconfigure(1, weight=1)
 
+        # Nome do chat
+        name_label = ctk.CTkLabel(
+            info_frame, text=chat_data["name"], font=self.FONTS["body_bold"], anchor="w"
+        )
+        name_label.grid(row=0, column=0, sticky="w")
+
+        # Última mensagem
         message_label = ctk.CTkLabel(
             info_frame,
             text=chat_data["last_message"],
-            font=ctk.CTkFont(size=12),
+            font=self.FONTS["small"],
             text_color=("gray50", "gray70"),
             anchor="w",
         )
-        message_label.grid(row=0, column=0, sticky="w")
+        message_label.grid(row=1, column=0, sticky="w")
 
+        # Horário
         time_label = ctk.CTkLabel(
-            info_frame,
+            frame,
             text=chat_data["time"],
-            font=ctk.CTkFont(size=10),
+            font=self.FONTS["small"],
             text_color=("gray50", "gray70"),
         )
-        time_label.grid(row=0, column=1, sticky="e")
+        time_label.grid(row=0, column=2, padx=10)
 
         return frame
 
@@ -1200,52 +1419,61 @@ class ChatApp(ctk.CTk):
         self.replying_to = None
         self.reply_frame.grid_remove()
 
-    def send_message(self):
-        """Envia a mensagem atual"""
-        message = self.input_textbox.get("1.0", "end-1c").strip()
-        if message:
-            # Salvar informações de resposta se houver
-            reply_info = None
-            if self.replying_to:
-                reply_info = self.replying_to
-                self.cancel_reply()
-
-            # Adiciona a mensagem do usuário
-            self.add_message(
-                self.user_settings["username"], message, reply_to=reply_info
+    def show_typing_indicator(self):
+        """Shows the typing indicator"""
+        if not self.typing_indicator:
+            self.typing_indicator = TypingIndicator(self.chat_frame)
+            self.typing_indicator.grid(
+                row=len(self.chat_frame.grid_slaves()),
+                column=0,
+                sticky="w",
+                padx=10,
+                pady=5,
             )
 
-            self.input_textbox.delete("1.0", "end")
+    def hide_typing_indicator(self):
+        """Hides the typing indicator"""
+        if self.typing_indicator:
+            self.typing_indicator.destroy()
+            self.typing_indicator = None
 
-            # Simula resposta do bot após um pequeno atraso
-            self.after(800, self.simulate_bot_response)
+    def send_message(self):
+        """Sends a message"""
+        message = self.input_textbox.get("1.0", "end-1c").strip()
+        if message and message != self.input_placeholder:
+            # Add user message
+            self.add_message(self.user_settings["username"], message)
+
+            # Clear input
+            self.input_textbox.delete("1.0", "end")
+            self.show_input_placeholder()
+
+            # Show typing indicator
+            self.show_typing_indicator()
+
+            # Simulate bot response after typing delay
+            self.after(
+                2000,
+                lambda: [
+                    self.hide_typing_indicator(),
+                    self.add_message("ChatBot", random.choice(self.bot_responses)),
+                ],
+            )
+
+            # Show notification
+            self.show_notification("Mensagem enviada!", "success")
+        else:
+            self.show_notification("Digite uma mensagem antes de enviar", "warning")
 
     def simulate_bot_response(self):
         """Simula uma resposta do bot para demonstração"""
         response = random.choice(self.bot_responses)
         # Simula digitação
-        self.show_typing_indicator("ChatBot")
+        self.show_typing_indicator()
 
         # Atraso para simular processamento
         typing_time = len(response) * 0.05  # Tempo baseado no tamanho da resposta
         self.after(int(typing_time * 1000), lambda: self.finish_bot_response(response))
-
-    def show_typing_indicator(self, sender):
-        """Exibe um indicador de digitação"""
-        # Frame para indicador
-        typing_indicator = ctk.CTkFrame(self.chat_frame)
-
-        # Label com texto "digitando..."
-        typing_text = ctk.CTkLabel(
-            typing_indicator,
-            text=f"{sender} está digitando...",
-            font=ctk.CTkFont(size=12),
-            text_color=("gray40", "gray70"),
-        )
-        typing_text.pack(padx=10, pady=5)
-
-        self.chat_frame.add_widget(typing_indicator)
-        self.typing_indicator = typing_indicator
 
     def finish_bot_response(self, message):
         """Remove o indicador de digitação e mostra a resposta"""
@@ -1549,7 +1777,7 @@ class ChatApp(ctk.CTk):
             command=self.attach_file,
             fg_color="transparent",
             hover_color=("gray85", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.attach_button.grid(row=0, column=0, padx=2)
 
@@ -1562,7 +1790,7 @@ class ChatApp(ctk.CTk):
             command=lambda: self.show_feature_unavailable("Gravação de Áudio"),
             fg_color="transparent",
             hover_color=("gray85", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.audio_button.grid(row=0, column=1, padx=2)
 
@@ -1573,7 +1801,7 @@ class ChatApp(ctk.CTk):
             wrap="word",
             fg_color="transparent",
             corner_radius=10,
-            font=FONTS["body"],
+            font=self.FONTS["body"],
             activate_scrollbars=False,
         )
         self.input_textbox.grid(row=0, column=1, sticky="ew", padx=10, pady=5)
@@ -1602,7 +1830,7 @@ class ChatApp(ctk.CTk):
             command=self.show_emoji_selector,
             fg_color="transparent",
             hover_color=("gray85", "gray30"),
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
         )
         self.emoji_button.grid(row=0, column=0, padx=2)
 
@@ -1615,7 +1843,7 @@ class ChatApp(ctk.CTk):
             command=self.send_message,
             fg_color=COLORS["primary"],
             hover_color=COLORS["primary_hover"],
-            font=FONTS["emoji"],
+            font=self.FONTS["emoji"],
             corner_radius=17,
         )
         self.send_button.grid(row=0, column=1, padx=2)
@@ -1651,7 +1879,7 @@ class ChatApp(ctk.CTk):
         label = ctk.CTkLabel(
             notification,
             text=f"O recurso '{feature_name}' não está\ndisponível na versão atual.",
-            font=FONTS["body"],
+            font=self.FONTS["body"],
             justify="center",
         )
         label.pack(pady=(30, 20))
@@ -1661,9 +1889,229 @@ class ChatApp(ctk.CTk):
         )
         ok_button.pack(pady=10)
 
+    def show_notification(self, message, type="info"):
+        """Shows a notification message"""
+        notification = Notification(self, message, type)
+        self.notifications.append(notification)
+
+        # Position notifications
+        self.update_notification_positions()
+
+    def update_notification_positions(self):
+        """Updates the position of all active notifications"""
+        y_offset = 20
+        for notification in self.notifications:
+            if notification.winfo_exists():
+                x = self.winfo_screenwidth() - notification.winfo_width() - 20
+                notification.geometry(f"+{x}+{y_offset}")
+                y_offset += notification.winfo_height() + 10
+            else:
+                self.notifications.remove(notification)
+
+    def create_new_chat(self):
+        """Cria uma nova conversa"""
+        # Criar janela de diálogo
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Nova Conversa")
+        dialog.geometry("400x200")
+        dialog.resizable(False, False)
+        dialog.grab_set()  # Torna a janela modal
+
+        # Centralizar a janela
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() - dialog.winfo_width()) // 2
+        y = (dialog.winfo_screenheight() - dialog.winfo_height()) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+        # Label de instrução
+        instruction_label = ctk.CTkLabel(
+            dialog, text="Com quem você quer conversar?", font=self.FONTS["body_bold"]
+        )
+        instruction_label.pack(pady=(20, 10))
+
+        # Campo de entrada
+        name_entry = ctk.CTkEntry(dialog, placeholder_text="Nome do contato", width=300)
+        name_entry.pack(pady=10)
+        name_entry.focus_set()
+
+        # Frame para botões
+        button_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        button_frame.pack(pady=20)
+
+        # Botão cancelar
+        cancel_btn = ctk.CTkButton(
+            button_frame,
+            text="Cancelar",
+            fg_color="transparent",
+            border_width=1,
+            text_color=("gray10", "gray90"),
+            command=dialog.destroy,
+        )
+        cancel_btn.pack(side="left", padx=10)
+
+        # Função para criar o chat
+        def confirm_create():
+            name = name_entry.get().strip()
+            if name:
+                chat_data = {
+                    "name": name,
+                    "last_message": "Conversa iniciada",
+                    "time": "Agora",
+                }
+                chat_item = self.create_chat_item(self.conversations_frame, chat_data)
+                chat_item.pack(fill="x", padx=5, pady=2)
+                self.select_chat(name)
+                dialog.destroy()
+            else:
+                name_entry.configure(border_color="red")
+                dialog.after(
+                    1000,
+                    lambda: name_entry.configure(border_color=("gray70", "gray30")),
+                )
+
+        # Botão criar
+        create_btn = ctk.CTkButton(button_frame, text="Criar", command=confirm_create)
+        create_btn.pack(side="left", padx=10)
+
+        # Bind Enter key
+        name_entry.bind("<Return>", lambda e: confirm_create())
+
+    def toggle_theme(self):
+        """Alterna entre os temas claro e escuro"""
+        if ctk.get_appearance_mode() == "Dark":
+            ctk.set_appearance_mode("Light")
+            self.theme_btn.configure(text="🌙")
+        else:
+            ctk.set_appearance_mode("Dark")
+            self.theme_btn.configure(text="☀️")
+
+    def show_help(self):
+        """Exibe a janela de ajuda"""
+        help_window = ctk.CTkToplevel(self)
+        help_window.title("Ajuda")
+        help_window.geometry("500x600")
+        help_window.resizable(False, False)
+
+        # Título
+        title_label = ctk.CTkLabel(
+            help_window, text="Ajuda do UCAN", font=self.FONTS["heading"]
+        )
+        title_label.pack(pady=20)
+
+        # Frame de conteúdo com scroll
+        content_frame = ctk.CTkScrollableFrame(help_window)
+        content_frame.pack(fill="both", expand=True, padx=20, pady=(0, 20))
+
+        # Seções de ajuda
+        sections = [
+            {
+                "title": "Atalhos de Teclado",
+                "items": [
+                    "Ctrl + Enter: Enviar mensagem",
+                    "Ctrl + L: Limpar chat",
+                    "Esc: Cancelar resposta",
+                    "Shift + Enter: Nova linha",
+                ],
+            },
+            {
+                "title": "Recursos",
+                "items": [
+                    "🔍 Pesquisar mensagens",
+                    "📎 Anexar arquivos",
+                    "😊 Adicionar emojis",
+                    "↩️ Responder mensagens",
+                    "👍 Reagir a mensagens",
+                    "🌙/☀️ Alternar tema claro/escuro",
+                ],
+            },
+            {
+                "title": "Dicas",
+                "items": [
+                    "Clique em uma mensagem para ver opções",
+                    "Arraste arquivos para o chat para enviá-los",
+                    "Use @ para mencionar usuários",
+                    "Digite : para acessar emojis rapidamente",
+                ],
+            },
+        ]
+
+        for section in sections:
+            # Título da seção
+            section_title = ctk.CTkLabel(
+                content_frame, text=section["title"], font=self.FONTS["subheading"]
+            )
+            section_title.pack(anchor="w", pady=(15, 5))
+
+            # Itens da seção
+            for item in section["items"]:
+                item_label = ctk.CTkLabel(
+                    content_frame,
+                    text=f"• {item}",
+                    font=self.FONTS["body"],
+                    justify="left",
+                    anchor="w",
+                )
+                item_label.pack(anchor="w", padx=20, pady=2)
+
+        # Versão
+        version_label = ctk.CTkLabel(
+            help_window,
+            text="UCAN v1.0.0",
+            font=self.FONTS["small"],
+            text_color=("gray50", "gray70"),
+        )
+        version_label.pack(pady=(0, 10))
+
+    def confirm_logout(self):
+        """Confirma antes de fazer logout"""
+        confirm = ctk.CTkToplevel(self)
+        confirm.title("Confirmar Logout")
+        confirm.geometry("300x150")
+        confirm.resizable(False, False)
+        confirm.grab_set()  # Torna a janela modal
+
+        # Centralizar a janela
+        confirm.update_idletasks()
+        x = (confirm.winfo_screenwidth() - confirm.winfo_width()) // 2
+        y = (confirm.winfo_screenheight() - confirm.winfo_height()) // 2
+        confirm.geometry(f"+{x}+{y}")
+
+        # Mensagem
+        message = ctk.CTkLabel(
+            confirm, text="Tem certeza que deseja sair?", font=self.FONTS["body_bold"]
+        )
+        message.pack(pady=20)
+
+        # Frame para botões
+        button_frame = ctk.CTkFrame(confirm, fg_color="transparent")
+        button_frame.pack(pady=10)
+
+        # Botão cancelar
+        cancel_btn = ctk.CTkButton(
+            button_frame,
+            text="Cancelar",
+            fg_color="transparent",
+            border_width=1,
+            text_color=("gray10", "gray90"),
+            command=confirm.destroy,
+        )
+        cancel_btn.pack(side="left", padx=10)
+
+        # Botão confirmar
+        confirm_btn = ctk.CTkButton(
+            button_frame,
+            text="Sair",
+            fg_color="#e74c3c",
+            hover_color="#c0392b",
+            command=self.quit,
+        )
+        confirm_btn.pack(side="right", padx=10)
+
 
 def main():
     app = ChatApp()
+    loading = LoadingScreen(app)
+    app.after(2500, app.mainloop)  # Start mainloop after loading screen
     app.mainloop()
 
 
