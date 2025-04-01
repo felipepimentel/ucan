@@ -1,30 +1,31 @@
 [tool.poetry]
 name = "ucan"
 version = "0.1.0"
-description = "Um aplicativo de chat moderno e elegante"
-authors = ["Pimenta <pimenta@example.com>"]
+description = "UCAN - Um Chat Assistente Natural"
+authors = ["pimenta <pimenta@pimenta.dev>"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "ucan" }]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
+python = "^3.12"
 customtkinter = "^5.2.2"
-pillow = "^11.1.0"
-plyer = "^2.1.0"
+pillow = "^10.2.0"
+tinydb = "^4.8.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.1.0"
+black = "^24.2.0"
+ruff = "^0.2.2"
 isort = "^6.0.1"
 mypy = "^1.15.0"
 pylint = "^3.3.6"
 pytest = "^8.3.5"
 
 [tool.poetry.scripts]
-ucan = "ucan.main:main"
+ucan = "ucan:main"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]

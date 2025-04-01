@@ -1,7 +1,9 @@
-"""UCAN Chat - Um aplicativo de chat moderno e elegante"""
+"""
+UCAN - Um Chat Assistente Natural
+"""
+
+__version__ = "0.1.0"
 
 from .main import main
 
-__version__ = "0.1.0"
-__author__ = "Pimenta"
-__license__ = "MIT"
+__all__ = ["main"]
