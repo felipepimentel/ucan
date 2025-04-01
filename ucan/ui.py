@@ -388,6 +388,9 @@ class ChatApp(ctk.CTk):
         # Contato atual
         self.current_contact = "Assistente IA"
 
+        # Popula a lista de contatos
+        self.populate_contacts()
+
         # Ícone da janela
         try:
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
@@ -409,94 +412,169 @@ class ChatApp(ctk.CTk):
 
     def populate_contacts(self):
         """Popula a lista de contatos"""
-        # Apenas a LLM como contato
-        contact_frame = ctk.CTkFrame(
-            self.contacts_frame,
-            corner_radius=LAYOUT["border_radius"]["small"],
-            fg_color="transparent",
-            height=60,
-        )
-        contact_frame.pack(
-            fill="x", padx=LAYOUT["padding"]["small"], pady=LAYOUT["padding"]["small"]
-        )
-        contact_frame.pack_propagate(False)
+        # Dados fake para teste
+        fake_contacts = [
+            {
+                "name": "Assistente IA",
+                "icon": "🤖",
+                "description": "Chat principal",
+                "last_message": "Olá! Como posso ajudar?",
+                "time": "Agora",
+            },
+            {
+                "name": "Projeto Alpha",
+                "icon": "📊",
+                "description": "Análise de dados",
+                "last_message": "Analisando os resultados...",
+                "time": "10min",
+            },
+            {
+                "name": "Código Review",
+                "icon": "💻",
+                "description": "Review de código",
+                "last_message": "Encontrei alguns bugs",
+                "time": "1h",
+            },
+            {
+                "name": "Documentação",
+                "icon": "📝",
+                "description": "Docs do projeto",
+                "last_message": "Atualizando a documentação",
+                "time": "2h",
+            },
+        ]
 
-        # Container para avatar e informações
-        info_container = ctk.CTkFrame(
-            contact_frame,
-            fg_color="transparent",
-        )
-        info_container.pack(fill="both", expand=True, padx=LAYOUT["padding"]["small"])
-
-        # Avatar (círculo com ícone de IA)
-        avatar_size = 36
-        avatar_frame = ctk.CTkFrame(
-            info_container,
-            width=avatar_size,
-            height=avatar_size,
-            corner_radius=LAYOUT["border_radius"]["circle"],
-            fg_color=COLORS["primary"],
-        )
-        avatar_frame.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
-        avatar_frame.pack_propagate(False)
-
-        avatar_label = ctk.CTkLabel(
-            avatar_frame,
-            text="🤖",
-            font=ctk.CTkFont(family="Segoe UI", size=18),
-            text_color=COLORS["text_light"],
-        )
-        avatar_label.pack(expand=True)
-
-        # Container para nome
-        text_container = ctk.CTkFrame(
-            info_container,
-            fg_color="transparent",
-        )
-        text_container.pack(side="left", fill="both", expand=True)
-
-        # Nome
-        name_label = ctk.CTkLabel(
-            text_container,
-            text="Assistente IA",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            text_color=COLORS["text_primary"],
-            anchor="w",
-        )
-        name_label.pack(anchor="w")
-
-        # Descrição
-        description_label = ctk.CTkLabel(
-            text_container,
-            text="Chat inteligente",
-            font=ctk.CTkFont(family="Segoe UI", size=12),
-            text_color=COLORS["text_secondary"],
-            anchor="w",
-        )
-        description_label.pack(anchor="w")
-
-        # Bind click com efeito hover melhorado
-        callback = lambda e: self.start_chat()
-        for widget in [
-            contact_frame,
-            info_container,
-            avatar_frame,
-            avatar_label,
-            text_container,
-            name_label,
-            description_label,
-        ]:
-            widget.bind("<Button-1>", callback)
-            widget.bind(
-                "<Enter>",
-                lambda e, f=contact_frame: f.configure(
-                    fg_color=COLORS["surface_light"]
-                ),
+        for contact in fake_contacts:
+            # Frame do contato
+            contact_frame = ctk.CTkFrame(
+                self.contacts_frame,
+                corner_radius=LAYOUT["border_radius"]["small"],
+                fg_color="transparent",
+                height=72,
             )
-            widget.bind(
-                "<Leave>",
-                lambda e, f=contact_frame: f.configure(fg_color="transparent"),
+            contact_frame.pack(
+                fill="x",
+                padx=LAYOUT["padding"]["small"],
+                pady=(0, LAYOUT["padding"]["small"]),
             )
+            contact_frame.pack_propagate(False)
+
+            # Container para avatar e informações
+            info_container = ctk.CTkFrame(
+                contact_frame,
+                fg_color="transparent",
+            )
+            info_container.pack(
+                fill="both", expand=True, padx=LAYOUT["padding"]["small"]
+            )
+
+            # Avatar
+            avatar_size = 40
+            avatar_frame = ctk.CTkFrame(
+                info_container,
+                width=avatar_size,
+                height=avatar_size,
+                corner_radius=LAYOUT["border_radius"]["circle"],
+                fg_color=COLORS["primary"]
+                if contact["name"] == "Assistente IA"
+                else COLORS["secondary"],
+            )
+            avatar_frame.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
+            avatar_frame.pack_propagate(False)
+
+            avatar_label = ctk.CTkLabel(
+                avatar_frame,
+                text=contact["icon"],
+                font=ctk.CTkFont(family="Segoe UI", size=18),
+                text_color=COLORS["text_light"],
+            )
+            avatar_label.pack(expand=True)
+
+            # Container para textos
+            text_container = ctk.CTkFrame(
+                info_container,
+                fg_color="transparent",
+            )
+            text_container.pack(side="left", fill="both", expand=True)
+
+            # Linha superior: nome e tempo
+            header_container = ctk.CTkFrame(
+                text_container,
+                fg_color="transparent",
+            )
+            header_container.pack(fill="x", expand=True)
+
+            name_label = ctk.CTkLabel(
+                header_container,
+                text=contact["name"],
+                font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
+                text_color=COLORS["text_primary"],
+                anchor="w",
+            )
+            name_label.pack(side="left")
+
+            time_label = ctk.CTkLabel(
+                header_container,
+                text=contact["time"],
+                font=ctk.CTkFont(family="Segoe UI", size=12),
+                text_color=COLORS["text_secondary"],
+                anchor="e",
+            )
+            time_label.pack(side="right")
+
+            # Linha inferior: descrição e última mensagem
+            description_label = ctk.CTkLabel(
+                text_container,
+                text=contact["description"],
+                font=ctk.CTkFont(family="Segoe UI", size=12),
+                text_color=COLORS["text_secondary"],
+                anchor="w",
+            )
+            description_label.pack(anchor="w")
+
+            last_message_label = ctk.CTkLabel(
+                text_container,
+                text=contact["last_message"],
+                font=ctk.CTkFont(family="Segoe UI", size=12),
+                text_color=COLORS["text_secondary"],
+                anchor="w",
+            )
+            last_message_label.pack(anchor="w")
+
+            # Efeito de hover melhorado
+            def create_hover_effect(frame, is_primary=False):
+                def on_enter(e):
+                    frame.configure(fg_color=COLORS["surface_light"])
+                    if is_primary:
+                        avatar_frame.configure(fg_color=COLORS["primary_hover"])
+                    else:
+                        avatar_frame.configure(fg_color=COLORS["secondary_hover"])
+
+                def on_leave(e):
+                    frame.configure(fg_color="transparent")
+                    if is_primary:
+                        avatar_frame.configure(fg_color=COLORS["primary"])
+                    else:
+                        avatar_frame.configure(fg_color=COLORS["secondary"])
+
+                for widget in [
+                    frame,
+                    info_container,
+                    avatar_frame,
+                    avatar_label,
+                    text_container,
+                    name_label,
+                    description_label,
+                    last_message_label,
+                ]:
+                    widget.bind("<Enter>", on_enter)
+                    widget.bind("<Leave>", on_leave)
+                    widget.bind(
+                        "<Button-1>",
+                        lambda e, name=contact["name"]: self.start_chat_with(name),
+                    )
+
+            create_hover_effect(contact_frame, contact["name"] == "Assistente IA")
 
     def start_chat(self):
         """Inicia o chat com o assistente"""
@@ -830,6 +908,56 @@ class ChatApp(ctk.CTk):
                 bg=COLORS["primary"],
             )
             canvas.place(relwidth=1, relheight=1)
+
+            # Cria gradiente
+            width = frame.winfo_width()
+            height = frame.winfo_height()
+
+            # Desenha retângulo com gradiente
+            canvas.create_rectangle(
+                0,
+                0,
+                width,
+                height,
+                fill=COLORS["primary"],
+                outline=COLORS["primary_hover"],
+                stipple="gray50",
+            )
+
+            # Atualiza gradiente quando a janela é redimensionada
+            frame.bind("<Configure>", lambda e: self._update_gradient(canvas, frame))
+
+        except Exception as e:
+            logger.error(f"Erro ao criar gradiente: {str(e)}")
+
+    def _update_gradient(self, canvas, frame):
+        """Atualiza o gradiente quando a janela é redimensionada"""
+        try:
+            width = frame.winfo_width()
+            height = frame.winfo_height()
+            canvas.delete("all")
+            canvas.create_rectangle(
+                0,
+                0,
+                width,
+                height,
+                fill=COLORS["primary"],
+                outline=COLORS["primary_hover"],
+                stipple="gray50",
+            )
+        except Exception as e:
+            logger.error(f"Erro ao atualizar gradiente: {str(e)}")
+
+    def _create_gradient_old(self, frame):
+        """Cria efeito de gradiente no frame"""
+        try:
+            # Cria canvas para o gradiente
+            canvas = tkinter.Canvas(
+                frame,
+                highlightthickness=0,
+                bg=COLORS["primary"],
+            )
+            canvas.place(relwidth=1, relheight=1)
             canvas.lower()
 
             # Cria gradiente
@@ -842,18 +970,18 @@ class ChatApp(ctk.CTk):
                 r = r1 + (r2 - r1) * i / height
                 g = g1 + (g2 - g1) * i / height
                 b = b1 + (b2 - b1) * i / height
-                color = f'#{int(r/256):02x}{int(g/256):02x}{int(b/256):02x}'
+                color = f"#{int(r / 256):02x}{int(g / 256):02x}{int(b / 256):02x}"
 
                 # Desenha linha do gradiente
                 canvas.create_line(0, i, width, i, fill=color)
 
             # Atualiza gradiente quando a janela é redimensionada
-            frame.bind('<Configure>', lambda e: self._update_gradient(canvas, frame))
+            frame.bind("<Configure>", lambda e: self._update_gradient(canvas, frame))
 
         except Exception as e:
             logger.error(f"Erro ao criar gradiente: {str(e)}")
 
-    def _update_gradient(self, canvas, frame):
+    def _update_gradient_old(self, canvas, frame):
         """Atualiza o gradiente quando a janela é redimensionada"""
         try:
             width = frame.winfo_width()
@@ -865,7 +993,68 @@ class ChatApp(ctk.CTk):
                 r = r1 + (r2 - r1) * i / height
                 g = g1 + (g2 - g1) * i / height
                 b = b1 + (b2 - b1) * i / height
-                color = f'#{int(r/256):02x}{int(g/256):02x}{int(b/256):02x}'
+                color = f"#{int(r / 256):02x}{int(g / 256):02x}{int(b / 256):02x}"
                 canvas.create_line(0, i, width, i, fill=color)
         except Exception as e:
             logger.error(f"Erro ao atualizar gradiente: {str(e)}")
+
+    def start_chat_with(self, contact_name):
+        """Inicia chat com um contato específico"""
+        try:
+            # Atualiza o contato atual
+            self.current_contact = contact_name
+
+            # Atualiza informações do contato
+            self.contact_name.configure(text=contact_name)
+
+            # Define ícone baseado no contato
+            icons = {
+                "Assistente IA": "🤖",
+                "Projeto Alpha": "📊",
+                "Código Review": "💻",
+                "Documentação": "📝",
+            }
+            self.contact_avatar_label.configure(text=icons.get(contact_name, "👤"))
+
+            # Atualiza cor do avatar
+            self.contact_avatar.configure(
+                fg_color=COLORS["primary"]
+                if contact_name == "Assistente IA"
+                else COLORS["secondary"]
+            )
+
+            # Limpa o chat
+            self.messages_frame.clear_messages()
+
+            # Carrega mensagens do banco de dados
+            messages = self.db.get_messages(contact_name)
+
+            # Se não houver mensagens, adiciona mensagem de boas-vindas
+            if not messages:
+                welcome_messages = {
+                    "Assistente IA": "Olá! Sou o UCAN, seu assistente virtual. Como posso ajudar você hoje?",
+                    "Projeto Alpha": "Vamos analisar os dados do projeto!",
+                    "Código Review": "Pronto para revisar seu código.",
+                    "Documentação": "Vamos organizar a documentação!",
+                }
+                self.after(
+                    500,
+                    lambda: self.add_message(
+                        welcome_messages.get(contact_name, "Olá! Como posso ajudar?"),
+                        contact_name,
+                    ),
+                )
+            else:
+                # Adiciona mensagens existentes
+                for msg in messages:
+                    self.add_message(msg["content"], msg["sender"])
+
+            # Atualiza status
+            self.contact_status.configure(text="Pronto para conversar")
+
+            # Foca no campo de mensagem
+            self.message_entry.focus()
+
+        except Exception as e:
+            logger.error(f"Erro ao iniciar chat: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível iniciar o chat.")
