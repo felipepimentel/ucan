@@ -913,14 +913,8 @@ class ChatApp(ctk.CTk):
             self.clipboard_clear()
             self.clipboard_append(message)
 
-            # Salva a cor original
-            original_color = message_frame.cget("fg_color")
-
             # Feedback visual
-            message_frame.configure(fg_color=self.colors["primary"])
-
-            # Restaura após 200ms
-            self.after(200, lambda: message_frame.configure(fg_color=original_color))
+            self.after(200, lambda: messagebox.showinfo("Sucesso", "Mensagem copiada!"))
 
         except Exception as e:
             logger.error(f"Erro ao copiar mensagem: {str(e)}")
@@ -931,6 +925,12 @@ class ChatApp(ctk.CTk):
     def edit_message(self, message_frame):
         """Edita uma mensagem"""
         try:
+            # Get original message content
+            original_text = (
+                message_frame.winfo_children()[0].winfo_children()[0].cget("text")
+            )
+            original_text = original_text.split("\n", 1)[1]  # Remove sender line
+
             # Cria um campo de texto para edição
             edit_text = ctk.CTkTextbox(
                 message_frame,
@@ -939,13 +939,13 @@ class ChatApp(ctk.CTk):
                 border_width=0,
                 text_color=self.colors["text"],
             )
-            edit_text.insert("1.0", message_frame.cget("text"))
+            edit_text.insert("1.0", original_text)
             edit_text.pack(fill="both", expand=True, padx=5, pady=5)
             edit_text.focus()
 
             def save_edit():
                 new_text = edit_text.get("1.0", "end-1c").strip()
-                if new_text and new_text != message_frame.cget("text"):
+                if new_text and new_text != original_text:
                     # Atualiza a mensagem no banco de dados
                     if self.current_project:
                         self.project_manager.update_conversation(
@@ -954,7 +954,9 @@ class ChatApp(ctk.CTk):
                         )
 
                     # Atualiza a UI
-                    message_frame.configure(text=f"Você\n{new_text}")
+                    message_frame.winfo_children()[0].winfo_children()[0].configure(
+                        text=f"Você\n{new_text}"
+                    )
 
                 # Remove o campo de edição
                 edit_text.destroy()
