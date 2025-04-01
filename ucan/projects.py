@@ -2,56 +2,59 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Dict, List, Optional
-
-from .database import Database
+from typing import Dict, Optional
 
 logger = logging.getLogger("UCAN")
 
 
 class ProjectManager:
-    def __init__(self, db: Database):
+    def __init__(self, db):
         self.db = db
         self.current_project: Optional[Dict] = None
         self.projects_dir = os.path.join(os.path.dirname(__file__), "projects")
         os.makedirs(self.projects_dir, exist_ok=True)
 
-    def create_project(self, name: str, description: str, instructions: str) -> Dict:
+    def create_project(
+        self, name: str, description: str, instructions: str = ""
+    ) -> int:
         """Create a new project"""
+        return self.db.save_project(name, description, instructions)
+
+    def update_project(self, project_id: int, project_data: dict) -> bool:
+        """Update an existing project"""
         try:
-            # Create project directory
-            project_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            project_dir = os.path.join(self.projects_dir, project_id)
-            os.makedirs(project_dir, exist_ok=True)
-
-            # Create project metadata
-            project = {
-                "id": project_id,
-                "name": name,
-                "description": description,
-                "instructions": instructions,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-                "conversations": [],
-                "files": [],
-                "settings": {
-                    "model": "gpt-4",
-                    "temperature": 0.7,
-                    "max_tokens": 2000,
-                },
-            }
-
-            # Save project metadata
-            self._save_project_metadata(project)
-
-            # Save to database
-            self.db.save_project(project)
-
-            return project
-
+            self.db.save_project(
+                name=project_data["name"],
+                description=project_data["description"],
+                instructions=project_data.get("instructions", ""),
+            )
+            return True
         except Exception as e:
-            logger.error(f"Error creating project: {str(e)}")
-            raise
+            logger.error(f"Error updating project: {str(e)}")
+            return False
+
+    def delete_project(self, project_id: int) -> bool:
+        """Delete a project"""
+        return self.db.delete_project(project_id)
+
+    def list_projects(self):
+        """List all projects"""
+        return self.db.get_all_projects()
+
+    def get_project(self, project_id: int):
+        """Get a project by ID"""
+        return self.db.get_project(project_id)
+
+    def add_conversation(self, project_id: int, conversation: dict):
+        """Add a conversation to a project"""
+        return self.db.save_conversation(
+            project_id, conversation["sender"], conversation["content"]
+        )
+
+    def update_conversation(self, project_id: int, conversation: dict):
+        """Update a conversation in a project"""
+        # TODO: Implement conversation update
+        pass
 
     def load_project(self, project_id: str) -> Optional[Dict]:
         """Load a project by ID"""
@@ -75,98 +78,6 @@ class ProjectManager:
         except Exception as e:
             logger.error(f"Error loading project: {str(e)}")
             return None
-
-    def update_project(self, project_id: str, updates: Dict) -> bool:
-        """Update project metadata"""
-        try:
-            # Update project metadata
-            project = self.load_project(project_id)
-            if not project:
-                return False
-
-            project.update(updates)
-            project["updated_at"] = datetime.now().isoformat()
-
-            # Save updated metadata
-            self._save_project_metadata(project)
-
-            # Update database
-            self.db.update_project(project_id, updates)
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error updating project: {str(e)}")
-            return False
-
-    def delete_project(self, project_id: str) -> bool:
-        """Delete a project"""
-        try:
-            # Delete project directory
-            project_dir = os.path.join(self.projects_dir, project_id)
-            if os.path.exists(project_dir):
-                for root, dirs, files in os.walk(project_dir, topdown=False):
-                    for name in files:
-                        os.remove(os.path.join(root, name))
-                    for name in dirs:
-                        os.rmdir(os.path.join(root, name))
-                os.rmdir(project_dir)
-
-            # Delete from database
-            self.db.delete_project(project_id)
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error deleting project: {str(e)}")
-            return False
-
-    def list_projects(self) -> List[Dict]:
-        """List all projects"""
-        try:
-            # Get projects from database
-            projects = self.db.get_all_projects()
-            if projects:
-                return projects
-
-            # If no projects in database, scan directory
-            projects = []
-            for project_id in os.listdir(self.projects_dir):
-                project = self.load_project(project_id)
-                if project:
-                    projects.append(project)
-
-            return projects
-
-        except Exception as e:
-            logger.error(f"Error listing projects: {str(e)}")
-            return []
-
-    def add_conversation(self, project_id: str, conversation: Dict) -> bool:
-        """Add a conversation to a project"""
-        try:
-            project = self.load_project(project_id)
-            if not project:
-                return False
-
-            conversation["id"] = datetime.now().strftime("%Y%m%d_%H%M%S")
-            conversation["created_at"] = datetime.now().isoformat()
-            project["conversations"].append(conversation)
-            project["updated_at"] = datetime.now().isoformat()
-
-            # Save updated metadata
-            self._save_project_metadata(project)
-
-            # Update database
-            self.db.update_project(
-                project_id, {"conversations": project["conversations"]}
-            )
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Error adding conversation: {str(e)}")
-            return False
 
     def add_file(self, project_id: str, file_info: Dict) -> bool:
         """Add a file to a project"""

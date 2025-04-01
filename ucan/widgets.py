@@ -1,11 +1,11 @@
 import datetime
 import logging
 import re
+from tkinter import messagebox
 from typing import Callable, Dict, Optional
 
 import customtkinter as ctk
 import markdown2  # Add this import
-import messagebox
 
 from .theme import LAYOUT, ThemeManager
 
@@ -203,56 +203,62 @@ class LoadingScreen(ctk.CTkToplevel):
 
 
 class ThinkingIndicator(ctk.CTkFrame):
-    """Indicador animado de 'pensando'"""
+    """Animated thinking indicator"""
 
     def __init__(self, master, **kwargs):
-        super().__init__(master, fg_color="transparent", **kwargs)
+        super().__init__(master, **kwargs)
+
+        # Initialize theme manager
         self.theme_manager = ThemeManager()
         self.colors = self.theme_manager.get_colors()
 
-        # Dots
+        # Create dots
         self.dots = []
         for i in range(3):
             dot = ctk.CTkLabel(
                 self,
                 text="•",
-                font=ctk.CTkFont(size=24),
+                font=ctk.CTkFont(size=16),
                 text_color=self.colors["text_secondary"],
                 width=10,
             )
-            dot.pack(side="left", padx=2)
+            dot.grid(row=0, column=i, padx=1)
             self.dots.append(dot)
 
-        self.current_dot = 0
-        self.animation_running = False
+        self.is_animating = False
 
     def start(self):
-        """Inicia a animação"""
-        self.animation_running = True
+        """Start animation"""
+        self.is_animating = True
         self._animate()
 
     def stop(self):
-        """Para a animação"""
-        self.animation_running = False
+        """Stop animation"""
+        self.is_animating = False
+
+    def _animate(self):
+        """Animate dots"""
+        if not self.is_animating:
+            return
+
+        # Reset all dots
         for dot in self.dots:
             dot.configure(text_color=self.colors["text_secondary"])
 
-    def _animate(self):
-        """Anima os pontos"""
-        if not self.animation_running:
-            return
+        # Get current time
+        now = datetime.datetime.now()
+        dot_index = (now.microsecond // 333333) % 3
 
-        for i, dot in enumerate(self.dots):
-            if i == self.current_dot:
-                dot.configure(text_color=self.colors["primary"])
-            else:
-                dot.configure(text_color=self.colors["text_secondary"])
+        # Highlight current dot
+        self.dots[dot_index].configure(text_color=self.colors["primary"])
 
-        self.current_dot = (self.current_dot + 1) % 3
-        self.after(300, self._animate)
+        # Schedule next animation frame
+        self.after(100, self._animate)
 
 
-class ProjectDialog(ctk.CTkToplevel):
+class ProjectPanel(ctk.CTkToplevel):
+    """Panel for creating/editing projects"""
+
     def __init__(
         self,
         parent,
@@ -260,197 +266,130 @@ class ProjectDialog(ctk.CTkToplevel):
         on_save: Optional[Callable[[Dict], None]] = None,
     ):
         super().__init__(parent)
-        self.project = project
-        self.on_save = on_save
-        self.theme_manager = ThemeManager()
-        self.colors = self.theme_manager.get_colors()
-
-        # Configure window
-        self.title("Novo Projeto" if not project else "Editar Projeto")
-        self.geometry("600x700")
+        self.title("Projeto")
+        self.geometry("400x500")
         self.resizable(False, False)
-
-        # Center dialog
-        self.update_idletasks()
-        x = parent.winfo_x() + (parent.winfo_width() // 2) - (self.winfo_width() // 2)
-        y = parent.winfo_y() + (parent.winfo_height() // 2) - (self.winfo_height() // 2)
-        self.geometry(f"+{x}+{y}")
-
-        # Make dialog modal
         self.transient(parent)
         self.grab_set()
 
-        # Main container
-        main_frame = ctk.CTkFrame(self, fg_color="transparent")
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        # Initialize theme manager
+        self.theme_manager = ThemeManager()
+        self.colors = self.theme_manager.get_colors()
+
+        # Store project data
+        self.project = project
+        self.project_id = project["id"] if project else None
+        self.on_save = on_save
+
+        # Center the window
+        self.update_idletasks()
+        width = self.winfo_width()
+        height = self.winfo_height()
+        x = (parent.winfo_screenwidth() // 2) - (width // 2)
+        y = (parent.winfo_screenheight() // 2) - (height // 2)
+        self.geometry(f"{width}x{height}+{x}+{y}")
 
         # Project name
         name_label = ctk.CTkLabel(
-            main_frame,
-            text="Nome do Projeto",
+            self,
+            text="Nome do projeto:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.colors["text"],
         )
-        name_label.pack(anchor="w", pady=(0, 5))
+        name_label.pack(anchor="w", padx=20, pady=(20, 5))
 
         self.name_entry = ctk.CTkEntry(
-            main_frame,
-            fg_color=self.colors["surface"],
-            text_color=self.colors["text"],
-            border_color=self.colors["border"],
+            self,
+            placeholder_text="Digite o nome do projeto",
+            width=360,
         )
-        self.name_entry.pack(fill="x", pady=(0, 15))
-        if project:
-            self.name_entry.insert(0, project["name"])
+        self.name_entry.pack(padx=20, pady=(0, 20))
 
         # Project description
         desc_label = ctk.CTkLabel(
-            main_frame,
-            text="Descrição",
+            self,
+            text="Descrição:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.colors["text"],
         )
-        desc_label.pack(anchor="w", pady=(0, 5))
+        desc_label.pack(anchor="w", padx=20, pady=(0, 5))
 
         self.desc_text = ctk.CTkTextbox(
-            main_frame,
+            self,
+            width=360,
             height=100,
-            fg_color=self.colors["surface"],
-            text_color=self.colors["text"],
-            border_color=self.colors["border"],
         )
-        self.desc_text.pack(fill="x", pady=(0, 15))
-        if project:
-            self.desc_text.insert("1.0", project["description"])
+        self.desc_text.pack(padx=20, pady=(0, 20))
 
         # Project instructions
-        instructions_label = ctk.CTkLabel(
-            main_frame,
-            text="Instruções para o Assistente",
+        inst_label = ctk.CTkLabel(
+            self,
+            text="Instruções:",
             font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.colors["text"],
         )
-        instructions_label.pack(anchor="w", pady=(0, 5))
+        inst_label.pack(anchor="w", padx=20, pady=(0, 5))
 
-        self.instructions_text = ctk.CTkTextbox(
-            main_frame,
-            height=200,
-            fg_color=self.colors["surface"],
-            text_color=self.colors["text"],
-            border_color=self.colors["border"],
+        self.inst_text = ctk.CTkTextbox(
+            self,
+            width=360,
+            height=150,
         )
-        self.instructions_text.pack(fill="x", pady=(0, 15))
-        if project:
-            self.instructions_text.insert("1.0", project["instructions"])
-
-        # Model settings
-        settings_label = ctk.CTkLabel(
-            main_frame,
-            text="Configurações do Modelo",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color=self.colors["text"],
-        )
-        settings_label.pack(anchor="w", pady=(0, 5))
-
-        settings_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        settings_frame.pack(fill="x", pady=(0, 15))
-
-        # Model selection
-        model_label = ctk.CTkLabel(
-            settings_frame,
-            text="Modelo:",
-            text_color=self.colors["text"],
-        )
-        model_label.pack(side="left", padx=(0, 10))
-
-        self.model_var = ctk.StringVar(
-            value=project["settings"]["model"] if project else "gpt-4"
-        )
-        model_menu = ctk.CTkOptionMenu(
-            settings_frame,
-            values=["gpt-4", "gpt-3.5-turbo"],
-            variable=self.model_var,
-            fg_color=self.colors["primary"],
-            text_color=self.colors["text_light"],
-            button_color=self.colors["primary_hover"],
-            button_hover_color=self.colors["secondary"],
-        )
-        model_menu.pack(side="left", padx=(0, 20))
-
-        # Temperature
-        temp_label = ctk.CTkLabel(
-            settings_frame,
-            text="Temperatura:",
-            text_color=self.colors["text"],
-        )
-        temp_label.pack(side="left", padx=(0, 10))
-
-        self.temp_var = ctk.DoubleVar(
-            value=project["settings"]["temperature"] if project else 0.7
-        )
-        temp_slider = ctk.CTkSlider(
-            settings_frame,
-            from_=0,
-            to=1,
-            variable=self.temp_var,
-            fg_color=self.colors["surface"],
-            progress_color=self.colors["primary"],
-            button_color=self.colors["primary"],
-            button_hover_color=self.colors["primary_hover"],
-        )
-        temp_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
-
-        temp_value = ctk.CTkLabel(
-            settings_frame,
-            textvariable=self.temp_var,
-            text_color=self.colors["text"],
-        )
-        temp_value.pack(side="left")
+        self.inst_text.pack(padx=20, pady=(0, 20))
 
         # Buttons
-        button_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        button_frame.pack(fill="x", pady=(20, 0))
+        button_frame = ctk.CTkFrame(
+            self,
+            fg_color="transparent",
+        )
+        button_frame.pack(fill="x", padx=20, pady=(0, 20))
 
-        cancel_button = ctk.CTkButton(
+        # Cancel button
+        cancel_btn = ctk.CTkButton(
             button_frame,
             text="Cancelar",
-            command=self.destroy,
+            width=100,
             fg_color=self.colors["surface"],
-            text_color=self.colors["text"],
             hover_color=self.colors["surface_light"],
+            command=self.destroy,
         )
-        cancel_button.pack(side="right", padx=(10, 0))
+        cancel_btn.pack(side="left")
 
-        save_button = ctk.CTkButton(
+        # Save button
+        save_btn = ctk.CTkButton(
             button_frame,
             text="Salvar",
+            width=100,
             command=self._save_project,
-            fg_color=self.colors["primary"],
-            text_color=self.colors["text_light"],
-            hover_color=self.colors["primary_hover"],
         )
-        save_button.pack(side="right")
+        save_btn.pack(side="right")
+
+        # Load project data if editing
+        if project:
+            self.name_entry.insert(0, project["name"])
+            self.desc_text.insert("1.0", project["description"])
+            self.inst_text.insert("1.0", project.get("instructions", ""))
 
     def _save_project(self):
-        """Save project settings"""
+        """Save project data"""
         try:
+            name = self.name_entry.get().strip()
+            description = self.desc_text.get("1.0", "end-1c").strip()
+            instructions = self.inst_text.get("1.0", "end-1c").strip()
+
+            if not name:
+                messagebox.showerror("Erro", "O nome do projeto é obrigatório.")
+                return
+
+            if not description:
+                messagebox.showerror("Erro", "A descrição do projeto é obrigatória.")
+                return
+
             project_data = {
-                "name": self.name_entry.get().strip(),
-                "description": self.desc_text.get("1.0", "end-1c").strip(),
-                "instructions": self.instructions_text.get("1.0", "end-1c").strip(),
-                "settings": {
-                    "model": self.model_var.get(),
-                    "temperature": self.temp_var.get(),
-                    "max_tokens": 2000,
-                },
+                "name": name,
+                "description": description,
+                "instructions": instructions,
             }
 
-            if self.project:
-                project_data["id"] = self.project["id"]
-                project_data["created_at"] = self.project["created_at"]
-                project_data["updated_at"] = datetime.datetime.now().isoformat()
-                project_data["conversations"] = self.project["conversations"]
-                project_data["files"] = self.project["files"]
+            if self.project_id:
+                project_data["id"] = self.project_id
 
             if self.on_save:
                 self.on_save(project_data)
@@ -460,3 +399,24 @@ class ProjectDialog(ctk.CTkToplevel):
         except Exception as e:
             logger.error(f"Error saving project: {str(e)}")
             messagebox.showerror("Erro", "Não foi possível salvar o projeto.")
+
+    def show(self):
+        """Show the panel"""
+        try:
+            # Center the window
+            self.update_idletasks()
+            width = self.winfo_width()
+            height = self.winfo_height()
+            x = (self.master.winfo_screenwidth() // 2) - (width // 2)
+            y = (self.master.winfo_screenheight() // 2) - (height // 2)
+            self.geometry(f"{width}x{height}+{x}+{y}")
+
+            # Show window
+            self.deiconify()
+            self.focus_force()
+
+        except Exception as e:
+            logger.error(f"Error showing project panel: {str(e)}")
+            messagebox.showerror(
+                "Erro", "Não foi possível mostrar o painel do projeto."
+            )

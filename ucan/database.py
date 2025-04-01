@@ -399,43 +399,20 @@ class Database:
             logger.error(f"Error getting messages: {str(e)}")
             raise
 
-    def save_project(self, project_data: dict) -> int:
+    def save_project(
+        self, name: str, description: str, instructions: str = "", settings: str = "{}"
+    ) -> int:
         """Save a project to the database"""
         try:
             with self.conn:
-                if "id" in project_data:
-                    # Update existing project
-                    self.conn.execute(
-                        """
-                        UPDATE projects
-                        SET name = ?, description = ?, instructions = ?,
-                            settings = ?, updated_at = CURRENT_TIMESTAMP
-                        WHERE id = ?
-                    """,
-                        (
-                            project_data["name"],
-                            project_data["description"],
-                            project_data["instructions"],
-                            str(project_data["settings"]),
-                            project_data["id"],
-                        ),
-                    )
-                    return project_data["id"]
-                else:
-                    # Create new project
-                    cursor = self.conn.execute(
-                        """
-                        INSERT INTO projects (name, description, instructions, settings)
-                        VALUES (?, ?, ?, ?)
-                    """,
-                        (
-                            project_data["name"],
-                            project_data["description"],
-                            project_data["instructions"],
-                            str(project_data["settings"]),
-                        ),
-                    )
-                    return cursor.lastrowid
+                cursor = self.conn.execute(
+                    """
+                    INSERT INTO projects (name, description, instructions, settings)
+                    VALUES (?, ?, ?, ?)
+                """,
+                    (name, description, instructions, settings),
+                )
+                return cursor.lastrowid
 
         except Exception as e:
             logger.error(f"Error saving project: {str(e)}")
@@ -589,6 +566,148 @@ class Database:
         except Exception as e:
             logger.error(f"Error adding project file: {str(e)}")
             raise
+
+    def save_conversation(self, project_id: int, sender: str, content: str) -> int:
+        """Save a conversation to a project"""
+        try:
+            with self.conn:
+                cursor = self.conn.execute(
+                    """
+                    INSERT INTO project_conversations (project_id, sender, content)
+                    VALUES (?, ?, ?)
+                """,
+                    (project_id, sender, content),
+                )
+                return cursor.lastrowid
+
+        except Exception as e:
+            logger.error(f"Error saving conversation: {str(e)}")
+            raise
+
+    def generate_test_data(self):
+        """Generate test data for projects and conversations"""
+        # Sample projects
+        projects = [
+            {
+                "name": "Projeto E-commerce",
+                "description": "Desenvolvimento de uma plataforma de e-commerce com React e Node.js",
+                "instructions": "Desenvolver uma plataforma moderna e responsiva usando React no frontend e Node.js no backend.",
+                "conversations": [
+                    {
+                        "sender": "Você",
+                        "content": "Preciso começar o desenvolvimento do e-commerce. Por onde sugere começar?",
+                    },
+                    {
+                        "sender": "Assistente IA",
+                        "content": "Sugiro começarmos pelo planejamento da arquitetura. Vamos usar:\n\n1. React + Vite para o frontend\n2. Node.js + Express para o backend\n3. PostgreSQL para o banco de dados\n\nQuer que eu crie a estrutura inicial do projeto?",
+                    },
+                    {
+                        "sender": "Você",
+                        "content": "Sim, por favor! Comece pelo frontend.",
+                    },
+                ],
+            },
+            {
+                "name": "API REST Documentation",
+                "description": "Documentação completa da API REST do sistema de pagamentos",
+                "instructions": "Criar documentação detalhada de todos os endpoints da API de pagamentos usando OpenAPI/Swagger.",
+                "conversations": [
+                    {
+                        "sender": "Você",
+                        "content": "Preciso documentar todos os endpoints da API de pagamentos.",
+                    },
+                    {
+                        "sender": "Assistente IA",
+                        "content": "Vou ajudar você a criar a documentação usando OpenAPI 3.0. Primeiro, vamos listar todos os endpoints principais:\n\n1. POST /payments\n2. GET /payments/{id}\n3. PUT /payments/{id}/status\n\nQuer que eu crie um template inicial?",
+                    },
+                ],
+            },
+            {
+                "name": "Bug Tracking System",
+                "description": "Sistema de rastreamento de bugs e issues para equipe de desenvolvimento",
+                "instructions": "Desenvolver um sistema interno para gerenciamento de bugs e issues usando Python e Django.",
+                "conversations": [
+                    {
+                        "sender": "Você",
+                        "content": "Como podemos estruturar o modelo de dados para o sistema de bugs?",
+                    },
+                    {
+                        "sender": "Assistente IA",
+                        "content": "Para o sistema de bugs, sugiro a seguinte estrutura de modelos:\n\n1. Bug\n   - título\n   - descrição\n   - status\n   - prioridade\n   - assignee\n\n2. Comment\n   - conteúdo\n   - autor\n   - timestamp\n\n3. Project\n   - nome\n   - descrição\n   - membros\n\nQuer que eu crie os modelos em Django?",
+                    },
+                    {
+                        "sender": "Você",
+                        "content": "Sim, pode criar os modelos por favor.",
+                    },
+                ],
+            },
+            {
+                "name": "ML Image Classifier",
+                "description": "Classificador de imagens usando machine learning com TensorFlow",
+                "instructions": "Desenvolver um modelo de ML para classificação de imagens de produtos.",
+                "conversations": [
+                    {
+                        "sender": "Você",
+                        "content": "Qual seria a melhor arquitetura para classificar imagens de produtos?",
+                    },
+                    {
+                        "sender": "Assistente IA",
+                        "content": "Para classificação de imagens de produtos, recomendo usar:\n\n1. Transfer Learning com ResNet50 ou EfficientNet\n2. Fine-tuning nas últimas camadas\n3. Data augmentation para melhorar generalização\n\nQuer que eu mostre um exemplo de implementação?",
+                    },
+                ],
+            },
+            {
+                "name": "DevOps Pipeline",
+                "description": "Configuração de pipeline CI/CD usando GitHub Actions",
+                "instructions": "Implementar pipeline completo de CI/CD com testes, build e deploy automático.",
+                "conversations": [
+                    {
+                        "sender": "Você",
+                        "content": "Preciso configurar um pipeline CI/CD para um projeto React.",
+                    },
+                    {
+                        "sender": "Assistente IA",
+                        "content": "Vou ajudar você a criar um workflow do GitHub Actions. O pipeline terá:\n\n1. Install dependencies\n2. Run tests\n3. Build\n4. Deploy to staging/production\n\nQuer que eu crie o arquivo yaml de configuração?",
+                    },
+                    {
+                        "sender": "Você",
+                        "content": "Sim, pode criar o arquivo de configuração.",
+                    },
+                ],
+            },
+        ]
+
+        # Insert projects and conversations
+        for project in projects:
+            conversations = project.pop("conversations")
+            project_id = self.save_project(
+                name=project["name"],
+                description=project["description"],
+                instructions=project["instructions"],
+            )
+
+            for conv in conversations:
+                self.save_conversation(project_id, conv["sender"], conv["content"])
+
+        # Sample templates
+        templates = [
+            {
+                "name": "Code Review Request",
+                "content": "Poderia fazer uma revisão de código do seguinte trecho?\n\n```\n[Cole seu código aqui]\n```\n\nPrincipais pontos a serem avaliados:\n1. Performance\n2. Boas práticas\n3. Segurança",
+            },
+            {
+                "name": "Bug Report",
+                "content": "Encontrei um bug no sistema:\n\nDescrição:\n[Descreva o bug]\n\nPassos para reproduzir:\n1.\n2.\n3.\n\nComportamento esperado:\n[Descreva]\n\nComportamento atual:\n[Descreva]",
+            },
+            {
+                "name": "Feature Request",
+                "content": "Gostaria de sugerir uma nova feature:\n\nDescrição:\n[Descreva a feature]\n\nCaso de uso:\n[Explique quando/como seria usada]\n\nBenefícios:\n[Liste os benefícios]",
+            },
+        ]
+
+        # Insert templates
+        for template in templates:
+            self.save_template(template["name"], template["content"])
 
     def __del__(self):
         """Close database connection"""

@@ -9,8 +9,8 @@ logger = logging.getLogger("UCAN")
 # Definir algumas cores e estilos consistentes para a aplicação
 COLORS = {
     "light": {
-        "primary": "#2563eb",  # bright blue
-        "secondary": "#059669",  # emerald green
+        "primary": "#7aa2f7",  # bright blue
+        "secondary": "#bb9af7",  # purple
         "background": "#f8fafc",  # very light gray
         "surface": "#ffffff",  # white
         "surface_light": "#f1f5f9",  # light gray
@@ -18,25 +18,25 @@ COLORS = {
         "text_primary": "#1e293b",  # dark slate
         "text_secondary": "#64748b",  # slate
         "text_light": "#f8fafc",  # very light gray
-        "error": "#ef4444",  # red
+        "error": "#f7768e",  # red
         "border": "#e2e8f0",  # gray
-        "primary_hover": "#1d4ed8",  # darker blue
-        "secondary_hover": "#047857",  # darker emerald
+        "primary_hover": "#3d59a1",  # darker blue
+        "secondary_hover": "#9d7af7",  # darker purple
     },
     "dark": {
-        "primary": "#3b82f6",  # blue
-        "secondary": "#10b981",  # emerald
-        "background": "#0f172a",  # very dark blue
-        "surface": "#1e293b",  # dark blue gray
-        "surface_light": "#334155",  # slate
-        "text": "#f8fafc",  # very light gray
-        "text_primary": "#f8fafc",  # very light gray
-        "text_secondary": "#94a3b8",  # light slate
+        "primary": "#7aa2f7",  # bright blue
+        "secondary": "#bb9af7",  # purple
+        "background": "#1a1b26",  # very dark blue
+        "surface": "#24283b",  # dark blue gray
+        "surface_light": "#2f3549",  # slate
+        "text": "#c0caf5",  # very light gray
+        "text_primary": "#c0caf5",  # very light gray
+        "text_secondary": "#565f89",  # light slate
         "text_light": "#f8fafc",  # very light gray
-        "error": "#f87171",  # light red
-        "border": "#334155",  # slate
-        "primary_hover": "#2563eb",  # brighter blue
-        "secondary_hover": "#059669",  # brighter emerald
+        "error": "#f7768e",  # red
+        "border": "#29394f",  # slate
+        "primary_hover": "#3d59a1",  # darker blue
+        "secondary_hover": "#9d7af7",  # darker purple
     },
 }
 
@@ -87,9 +87,9 @@ BUTTON_STYLES = {
     "default": {
         "font": ("Segoe UI", 16),
         "corner_radius": LAYOUT["border_radius"]["small"],
-        "fg_color": "#2563eb",  # bright blue
+        "fg_color": "#7aa2f7",  # bright blue
         "text_color": "#f8fafc",  # very light gray
-        "hover_color": "#1d4ed8",  # darker blue
+        "hover_color": "#3d59a1",  # darker blue
     },
     "outline": {
         "font": ("Segoe UI", 16),
@@ -103,9 +103,9 @@ BUTTON_STYLES = {
     "accent": {
         "font": ("Segoe UI", 16),
         "corner_radius": LAYOUT["border_radius"]["small"],
-        "fg_color": "#2563eb",  # bright blue
+        "fg_color": "#7aa2f7",  # bright blue
         "text_color": "#f8fafc",  # very light gray
-        "hover_color": "#1d4ed8",  # darker blue
+        "hover_color": "#3d59a1",  # darker blue
     },
     "icon": {
         "font": ("Segoe UI", 20),
