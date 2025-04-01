@@ -1,14 +1,19 @@
 import logging
 import os
+import threading
 import tkinter
 from tkinter import filedialog, messagebox
+from typing import Dict
 
 import customtkinter as ctk
+from PIL import Image, ImageTk
 
 from .ai_provider import AIProvider
+from .attachments import AttachmentManager
 from .database import Database
-from .theme import COLORS, LAYOUT, ThemeManager
-from .widgets import ScrollableMessageFrame
+from .projects import ProjectManager
+from .theme import LAYOUT, ThemeManager
+from .widgets import ScrollableMessageFrame, ThinkingIndicator
 
 logger = logging.getLogger("UCAN")
 
@@ -23,8 +28,12 @@ class ChatApp(ctk.CTk):
         self.geometry("1200x800")  # Aumentado para melhor visualização
         self.minsize(800, 600)  # Tamanho mínimo para garantir usabilidade
 
+        # Inicializa gerenciador de temas
+        self.theme_manager = ThemeManager()
+        self.colors = self.theme_manager.get_colors()
+
         # Configura o tema
-        ctk.set_appearance_mode("dark")
+        ctk.set_appearance_mode(self.theme_manager.current_theme)
         ctk.set_default_color_theme("blue")
 
         # Configura o grid principal
@@ -34,94 +43,30 @@ class ChatApp(ctk.CTk):
         # Frame lateral (contatos)
         self.sidebar = ctk.CTkFrame(
             self,
-            width=240,
+            width=300,  # Fixed width for better consistency
             corner_radius=0,
-            fg_color=COLORS["surface"],
+            fg_color=self.colors["surface"],
         )
         self.sidebar.grid(
             row=0,
             column=0,
             sticky="nsew",
-            padx=(0, 1),  # Borda direita fina
-            pady=0,
-        )
-        self.sidebar.grid_rowconfigure(2, weight=1)
-
-        # Frame do logo com gradiente
-        self.logo_frame = ctk.CTkFrame(
-            self.sidebar,
-            fg_color=COLORS["primary"],
-            corner_radius=0,
-            height=60,
-            border_width=0,
-        )
-        self.logo_frame.grid(
-            row=0,
-            column=0,
-            sticky="ew",
-            padx=0,
-            pady=(0, 1),  # Borda inferior fina
-        )
-        self.logo_frame.grid_propagate(False)
-
-        # Gradiente do logo
-        gradient_frame = ctk.CTkFrame(
-            self.logo_frame,
-            fg_color="transparent",
-            height=60,
-            corner_radius=0,
-        )
-        gradient_frame.pack(fill="both", expand=True)
-        gradient_frame.pack_propagate(False)
-
-        # Logo com efeito de gradiente
-        self.logo_label = ctk.CTkLabel(
-            gradient_frame,
-            text="UCAN",
-            font=ctk.CTkFont(family="Segoe UI", size=24, weight="bold"),
-            text_color=COLORS["text_light"],
-        )
-        self.logo_label.pack(expand=True)
-
-        # Efeito de gradiente
-        self._create_gradient(gradient_frame)
-
-        # Título da seção
-        self.chat_title = ctk.CTkLabel(
-            self.sidebar,
-            text="Assistente",
-            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-            text_color=COLORS["text_primary"],
-        )
-        self.chat_title.grid(
-            row=1,
-            column=0,
-            sticky="w",
-            padx=LAYOUT["padding"]["medium"],
-            pady=LAYOUT["padding"]["medium"],
-        )
-
-        # Lista de contatos com design clean
-        self.contacts_frame = ctk.CTkScrollableFrame(
-            self.sidebar,
-            corner_radius=0,
-            fg_color=COLORS["surface"],
-            border_width=0,
-        )
-        self.contacts_frame.grid(
-            row=2,
-            column=0,
-            sticky="nsew",
             padx=0,
             pady=0,
         )
-        self.contacts_frame.grid_columnconfigure(0, weight=1)
+
+        # Configure grid weights for better responsiveness
+        self.sidebar.grid_rowconfigure(
+            4, weight=1
+        )  # Projects frame gets the extra space
+        self.sidebar.grid_columnconfigure(0, weight=1)
+        self.sidebar.grid_propagate(False)  # Prevent auto-resizing
 
         # Frame principal
         self.main_frame = ctk.CTkFrame(
             self,
             corner_radius=0,
-            fg_color=COLORS["background"],
+            fg_color=self.colors["background"],
             border_width=0,
         )
         self.main_frame.grid(
@@ -137,7 +82,7 @@ class ChatApp(ctk.CTk):
         # Barra superior
         self.top_bar = ctk.CTkFrame(
             self.main_frame,
-            fg_color=COLORS["surface"],
+            fg_color=self.colors["surface"],
             corner_radius=0,
             height=60,
             border_width=0,
@@ -157,7 +102,24 @@ class ChatApp(ctk.CTk):
             self.top_bar,
             fg_color="transparent",
         )
-        contact_info.pack(fill="both", expand=True, padx=LAYOUT["padding"]["medium"])
+        contact_info.pack(
+            side="left", fill="both", expand=True, padx=LAYOUT["padding"]["medium"]
+        )
+
+        # Theme toggle button
+        self.theme_button = ctk.CTkButton(
+            self.top_bar,
+            text="🌙",
+            width=36,
+            height=36,
+            corner_radius=LAYOUT["border_radius"]["circle"],
+            font=ctk.CTkFont(size=16),
+            fg_color=self.colors["surface_light"],
+            hover_color=self.colors["primary"],
+            text_color=self.colors["text"],
+            command=self.toggle_theme,
+        )
+        self.theme_button.pack(side="right", padx=LAYOUT["padding"]["medium"])
 
         # Ícone do assistente
         avatar_size = 36
@@ -166,7 +128,7 @@ class ChatApp(ctk.CTk):
             width=avatar_size,
             height=avatar_size,
             corner_radius=LAYOUT["border_radius"]["circle"],
-            fg_color=COLORS["primary"],
+            fg_color=self.colors["primary"],
         )
         self.contact_avatar.pack(side="left", padx=(0, LAYOUT["padding"]["medium"]))
         self.contact_avatar.pack_propagate(False)
@@ -175,7 +137,7 @@ class ChatApp(ctk.CTk):
             self.contact_avatar,
             text="🤖",
             font=ctk.CTkFont(family="Segoe UI", size=18),
-            text_color=COLORS["text_light"],
+            text_color=self.colors["text"],
         )
         self.contact_avatar_label.pack(expand=True)
 
@@ -191,7 +153,7 @@ class ChatApp(ctk.CTk):
             contact_text,
             text="Assistente IA",
             font=ctk.CTkFont(family="Segoe UI", size=16, weight="bold"),
-            text_color=COLORS["text_primary"],
+            text_color=self.colors["text"],
             anchor="w",
         )
         self.contact_name.pack(anchor="w")
@@ -201,10 +163,15 @@ class ChatApp(ctk.CTk):
             contact_text,
             text="Pronto para conversar",
             font=ctk.CTkFont(family="Segoe UI", size=13),
-            text_color=COLORS["text_secondary"],
+            text_color=self.colors["text_secondary"],
             anchor="w",
         )
         self.contact_status.pack(anchor="w")
+
+        # Indicador de "pensando"
+        self.thinking_indicator = ThinkingIndicator(contact_text)
+        self.thinking_indicator.pack(anchor="w")
+        self.thinking_indicator.pack_forget()  # Hide initially
 
         # Frame de mensagens com overlay para botão de rolagem
         self.messages_container = ctk.CTkFrame(
@@ -212,20 +179,24 @@ class ChatApp(ctk.CTk):
             corner_radius=0,
             fg_color="transparent",
         )
-        self.messages_container.grid(row=1, column=0, sticky="nsew")
+        self.messages_container.grid(
+            row=1, column=0, sticky="nsew", padx=LAYOUT["padding"]["medium"]
+        )
         self.messages_container.grid_rowconfigure(0, weight=1)
         self.messages_container.grid_columnconfigure(0, weight=1)
 
         # Frame de mensagens
         self.messages_frame = ScrollableMessageFrame(
             self.messages_container,
-            corner_radius=0,
-            fg_color=COLORS["background"],
-            scrollbar_fg_color=COLORS["surface"],
-            scrollbar_button_color=COLORS["primary"],
-            scrollbar_button_hover_color=COLORS["primary_hover"],
+            corner_radius=LAYOUT["border_radius"]["medium"],
+            fg_color=self.colors["background"],
+            scrollbar_fg_color=self.colors["surface"],
+            scrollbar_button_color=self.colors["primary"],
+            scrollbar_button_hover_color=self.colors["secondary"],
         )
-        self.messages_frame.grid(row=0, column=0, sticky="nsew")
+        self.messages_frame.grid(
+            row=0, column=0, sticky="nsew", pady=LAYOUT["padding"]["medium"]
+        )
 
         # Botão de rolar para baixo
         self.scroll_button = ctk.CTkButton(
@@ -235,20 +206,20 @@ class ChatApp(ctk.CTk):
             height=36,
             corner_radius=LAYOUT["border_radius"]["circle"],
             font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color=COLORS["surface"],
-            hover_color=COLORS["surface_light"],
-            text_color=COLORS["primary"],
+            fg_color=self.colors["surface"],
+            hover_color=self.colors["surface"],
+            text_color=self.colors["primary"],
         )
         self.scroll_button.grid(row=0, column=0, sticky="se", padx=20, pady=20)
         self.scroll_button.configure(command=self._scroll_to_bottom)
         self.scroll_button.grid_remove()  # Inicialmente oculto
 
-        # Frame de entrada
+        # Input frame reorganization
         self.input_frame = ctk.CTkFrame(
             self.main_frame,
-            fg_color=COLORS["surface"],
+            fg_color=self.colors["surface"],
             corner_radius=0,
-            height=60,
+            height=140,  # Increased for auxiliary buttons
             border_width=0,
         )
         self.input_frame.grid(
@@ -256,7 +227,7 @@ class ChatApp(ctk.CTk):
             column=0,
             sticky="ew",
             padx=0,
-            pady=(1, 0),  # Borda superior fina
+            pady=(1, 0),
         )
         self.input_frame.grid_propagate(False)
 
@@ -269,115 +240,234 @@ class ChatApp(ctk.CTk):
             fill="both",
             expand=True,
             padx=LAYOUT["padding"]["medium"],
-            pady=LAYOUT["padding"]["small"],
+            pady=LAYOUT["padding"]["medium"],
         )
-
-        # Botão de anexo
-        self.attach_button = ctk.CTkButton(
-            input_container,
-            text="📎",
-            width=36,
-            height=36,
-            corner_radius=LAYOUT["border_radius"]["circle"],
-            font=ctk.CTkFont(size=16),
-            fg_color="transparent",
-            hover_color=COLORS["surface_light"],
-            text_color=COLORS["text_primary"],
-        )
-        self.attach_button.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
-        self.attach_button.configure(command=self.show_file_dialog)
 
         # Frame do input com fundo
         input_background = ctk.CTkFrame(
             input_container,
-            fg_color=COLORS["surface_light"],
+            fg_color=self.colors["surface_light"],
             corner_radius=LAYOUT["border_radius"]["medium"],
         )
         input_background.pack(
-            side="left", fill="x", expand=True, padx=(0, LAYOUT["padding"]["small"])
+            fill="both",
+            expand=True,
+            padx=0,
+            pady=0,
         )
 
-        # Container para input e contador
-        input_wrapper = ctk.CTkFrame(
+        # Container principal para texto e botões
+        main_input_container = ctk.CTkFrame(
             input_background,
             fg_color="transparent",
         )
-        input_wrapper.pack(side="left", fill="both", expand=True)
+        main_input_container.pack(
+            fill="both",
+            expand=True,
+            padx=LAYOUT["padding"]["small"],
+            pady=LAYOUT["padding"]["small"],
+        )
 
         # Campo de texto
         self.message_entry = ctk.CTkTextbox(
-            input_wrapper,
-            height=80,
+            main_input_container,
+            height=80,  # Increased height
             corner_radius=LAYOUT["border_radius"]["medium"],
             fg_color="transparent",
             border_width=0,
-            text_color=COLORS["text_primary"],
+            text_color=self.colors["text"],
             font=ctk.CTkFont(family="Segoe UI", size=14),
+            wrap="word",  # Word wrap
         )
         self.message_entry.pack(
-            side="top",
             fill="both",
             expand=True,
-            padx=LAYOUT["padding"]["medium"],
+            padx=0,
+            pady=0,
         )
 
-        # Contador de caracteres
-        self.char_counter = ctk.CTkLabel(
-            input_wrapper,
-            text="0/2000",
-            font=ctk.CTkFont(family="Segoe UI", size=11),
-            text_color=COLORS["text_secondary"],
-        )
-        self.char_counter.pack(
-            side="right",
-            padx=LAYOUT["padding"]["medium"],
-            pady=(0, 2),
-        )
-
-        # Bind para atualizar contador
-        self.message_entry.bind("<KeyRelease>", self._update_char_count)
-
-        # Botão de enviar mais elegante e integrado
-        self.send_button = ctk.CTkButton(
+        # Container para botões auxiliares
+        aux_buttons = ctk.CTkFrame(
             input_background,
-            text="➤",
-            width=36,
-            height=36,
-            corner_radius=LAYOUT["border_radius"]["circle"],
-            font=ctk.CTkFont(size=16, weight="bold"),
             fg_color="transparent",
-            hover_color=COLORS["primary"],
-            text_color=COLORS["primary"],
-            border_width=2,
-            border_color=COLORS["primary"],
+            height=32,
         )
-        self.send_button.pack(side="right", padx=LAYOUT["padding"]["small"])
-        self.send_button.configure(command=self.send_message)
+        aux_buttons.pack(
+            fill="x",
+            expand=False,
+            padx=LAYOUT["padding"]["small"],
+            pady=(0, LAYOUT["padding"]["small"]),
+        )
 
-        # Efeito de hover mais suave no botão
-        self.send_button.bind("<Enter>", self._highlight_send_button)
-        self.send_button.bind("<Leave>", self._restore_send_button)
+        # Botões de ação à esquerda
+        action_buttons = ctk.CTkFrame(
+            aux_buttons,
+            fg_color="transparent",
+        )
+        action_buttons.pack(side="left")
 
-        # Bind Enter para enviar
-        self.message_entry.bind("<Return>", self.handle_enter)
-        self.message_entry.bind(
-            "<Shift-Return>", lambda e: None
-        )  # Permite quebra de linha com Shift+Enter
+        # Botão de anexo
+        self.attach_button = ctk.CTkButton(
+            action_buttons,
+            text="📎",
+            width=32,
+            height=32,
+            corner_radius=LAYOUT["border_radius"]["circle"],
+            font=ctk.CTkFont(size=16),
+            fg_color="transparent",
+            hover_color=self.colors["surface"],
+            text_color=self.colors["text_secondary"],
+            command=self.show_file_dialog,
+        )
+        self.attach_button.pack(side="left", padx=(0, 4))
 
-        # Placeholder para o campo de mensagem
-        self.message_entry.insert("1.0", "Digite sua mensagem...")
-        self.message_entry.configure(text_color=COLORS["text_secondary"])
+        # Template button
+        self.template_button = ctk.CTkButton(
+            action_buttons,
+            text="📋",
+            width=32,
+            height=32,
+            corner_radius=LAYOUT["border_radius"]["circle"],
+            font=ctk.CTkFont(size=16),
+            fg_color="transparent",
+            hover_color=self.colors["surface"],
+            text_color=self.colors["text_secondary"],
+            command=self.show_template_dialog,
+        )
+        self.template_button.pack(side="left")
+
+        # Container direito para contador e botão de enviar
+        right_container = ctk.CTkFrame(
+            aux_buttons,
+            fg_color="transparent",
+        )
+        right_container.pack(side="right")
+
+        # Contador de tokens mais elegante
+        self.char_counter = ctk.CTkLabel(
+            right_container,
+            text="0",
+            font=ctk.CTkFont(family="Segoe UI", size=12),
+            text_color=self.colors["text_secondary"],
+            width=40,
+            height=20,
+            fg_color=self.colors["surface"],
+            corner_radius=10,
+        )
+        self.char_counter.pack(side="left", padx=(0, 8))
+
+        # Botão de enviar mais elegante
+        self.send_button = ctk.CTkButton(
+            right_container,
+            text="",  # Vazio para usar apenas o ícone
+            width=32,
+            height=32,
+            corner_radius=16,  # Metade da largura/altura para garantir círculo perfeito
+            font=ctk.CTkFont(size=18),
+            fg_color=self.colors["surface"],
+            hover_color=self.colors["primary"],
+            text_color=self.colors["primary"],
+            border_width=1,  # Adiciona borda
+            border_color=self.colors["primary"],  # Cor da borda igual ao ícone
+            command=self.send_message,
+        )
+        self.send_button.pack(side="right")
+
+        # Adiciona o ícone de enviar usando um label sobreposto
+        send_icon = ctk.CTkLabel(
+            self.send_button,
+            text="↗",  # Ícone de seta para enviar
+            font=ctk.CTkFont(size=20, weight="bold"),
+            text_color=self.colors["primary"],
+            fg_color="transparent",  # Garante transparência
+            width=32,  # Mesma largura do botão
+            height=32,  # Mesma altura do botão
+        )
+        send_icon.place(relx=0.5, rely=0.5, anchor="center")
+
+        # Bind para mudar a cor do ícone no hover
+        def on_enter(e):
+            send_icon.configure(text_color=self.colors["text_light"])
+            self.send_button.configure(
+                fg_color=self.colors["primary"],
+                border_color=self.colors["primary"],
+                hover_color=self.colors["primary_hover"],
+            )
+
+        def on_leave(e):
+            send_icon.configure(text_color=self.colors["primary"])
+            self.send_button.configure(
+                fg_color=self.colors["surface"],
+                border_color=self.colors["primary"],
+                hover_color=self.colors["primary"],
+            )
+
+        self.send_button.bind("<Enter>", on_enter)
+        self.send_button.bind("<Leave>", on_leave)
+
+        # Bind para efeito de clique
+        def on_press(e):
+            send_icon.configure(text_color=self.colors["text_light"])
+            self.send_button.configure(
+                fg_color=self.colors["primary_hover"],
+                border_color=self.colors["primary_hover"],
+            )
+
+        def on_release(e):
+            send_icon.configure(text_color=self.colors["text_light"])
+            self.send_button.configure(
+                fg_color=self.colors["primary"], border_color=self.colors["primary"]
+            )
+
+        self.send_button.bind("<Button-1>", on_press)
+        self.send_button.bind("<ButtonRelease-1>", on_release)
+
+        # Placeholder e bindings
+        self._add_placeholder()
         self.message_entry.bind("<FocusIn>", self._clear_placeholder)
         self.message_entry.bind("<FocusOut>", self._add_placeholder)
+        self.message_entry.bind("<KeyRelease>", self._update_char_count)
+        self.message_entry.bind("<Return>", self.handle_enter)
+
+        # Remove duplicate attach button
+        if hasattr(self, "attach_btn"):
+            self.attach_btn.destroy()
+            delattr(self, "attach_btn")
+
+        # Attachment preview frame
+        self.attachment_frame = ctk.CTkFrame(
+            input_container,
+            fg_color=self.colors["surface"],
+            corner_radius=LAYOUT["border_radius"]["medium"],
+        )
+        self.attachment_preview = ctk.CTkLabel(
+            self.attachment_frame,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color=self.colors["text"],
+        )
+        self.attachment_preview.pack(side="left", padx=10)
+
+        self.attachment_remove = ctk.CTkButton(
+            self.attachment_frame,
+            text="❌",
+            width=24,
+            height=24,
+            corner_radius=LAYOUT["border_radius"]["circle"],
+            font=ctk.CTkFont(size=12),
+            fg_color="transparent",
+            hover_color=self.colors["surface"],
+            text_color=self.colors["text_secondary"],
+            command=self.remove_attachment,
+        )
+        self.attachment_remove.pack(side="right", padx=5)
+        self.attachment_frame.pack_forget()
 
         # Bind para mostrar/ocultar botão de rolagem
         self.messages_frame.bind("<MouseWheel>", self._check_scroll_position)
 
         # Inicializa banco de dados
         self.db = Database()
-
-        # Inicializa gerenciador de temas
-        self.theme_manager = ThemeManager()
 
         # Inicializa provedor de AI
         self.ai_provider = AIProvider()
@@ -408,173 +498,260 @@ class ChatApp(ctk.CTk):
         # Configura o tratamento de entrada
         self.setup_input_handling()
 
+        # Inicializa gerenciador de anexos
+        self.attachment_manager = AttachmentManager(self.db)
+        self.current_attachment = None
+
+        # Initialize project manager
+        self.project_manager = ProjectManager(self.db)
+        self.current_project = None
+
+        # Load projects
+        self.load_projects()
+
         logger.info("Aplicação inicializada com sucesso")
 
     def populate_contacts(self):
         """Popula a lista de contatos"""
-        # Dados fake para teste
-        fake_contacts = [
-            {
-                "name": "Assistente IA",
-                "icon": "🤖",
-                "description": "Chat principal",
-                "last_message": "Olá! Como posso ajudar?",
-                "time": "Agora",
-            },
-            {
-                "name": "Projeto Alpha",
-                "icon": "📊",
-                "description": "Análise de dados",
-                "last_message": "Analisando os resultados...",
-                "time": "10min",
-            },
-            {
-                "name": "Código Review",
-                "icon": "💻",
-                "description": "Review de código",
-                "last_message": "Encontrei alguns bugs",
-                "time": "1h",
-            },
-            {
-                "name": "Documentação",
-                "icon": "📝",
-                "description": "Docs do projeto",
-                "last_message": "Atualizando a documentação",
-                "time": "2h",
-            },
-        ]
+        # Frame do logo com gradiente
+        self.logo_frame = ctk.CTkFrame(
+            self.sidebar,
+            fg_color=self.colors["primary"],
+            corner_radius=0,
+            height=48,  # Fixed height
+            border_width=0,
+        )
+        self.logo_frame.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=0,
+            pady=0,
+        )
+        self.logo_frame.grid_propagate(False)
 
-        for contact in fake_contacts:
-            # Frame do contato
-            contact_frame = ctk.CTkFrame(
-                self.contacts_frame,
-                corner_radius=LAYOUT["border_radius"]["small"],
-                fg_color="transparent",
-                height=72,
-            )
-            contact_frame.pack(
-                fill="x",
-                padx=LAYOUT["padding"]["small"],
-                pady=(0, LAYOUT["padding"]["small"]),
-            )
-            contact_frame.pack_propagate(False)
+        # Logo container para centralização
+        logo_container = ctk.CTkFrame(
+            self.logo_frame,
+            fg_color="transparent",
+            height=48,  # Match frame height
+        )
+        logo_container.pack(expand=True, fill="both")
+        logo_container.pack_propagate(False)
 
-            # Container para avatar e informações
-            info_container = ctk.CTkFrame(
-                contact_frame,
-                fg_color="transparent",
-            )
-            info_container.pack(
-                fill="both", expand=True, padx=LAYOUT["padding"]["small"]
-            )
+        # Logo content container
+        logo_content = ctk.CTkFrame(
+            logo_container,
+            fg_color="transparent",
+            height=32,  # Fixed content height
+        )
+        logo_content.place(relx=0.5, rely=0.5, anchor="center")
 
-            # Avatar
-            avatar_size = 40
-            avatar_frame = ctk.CTkFrame(
-                info_container,
-                width=avatar_size,
-                height=avatar_size,
-                corner_radius=LAYOUT["border_radius"]["circle"],
-                fg_color=COLORS["primary"]
-                if contact["name"] == "Assistente IA"
-                else COLORS["secondary"],
-            )
-            avatar_frame.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
-            avatar_frame.pack_propagate(False)
+        # Logo icon
+        logo_icon = ctk.CTkLabel(
+            logo_content,
+            text="🤖",
+            font=ctk.CTkFont(family="Segoe UI", size=20),
+            text_color=self.colors["text"],
+            height=32,  # Fixed height
+        )
+        logo_icon.pack(side="left", padx=(0, 8))
 
-            avatar_label = ctk.CTkLabel(
-                avatar_frame,
-                text=contact["icon"],
-                font=ctk.CTkFont(family="Segoe UI", size=18),
-                text_color=COLORS["text_light"],
-            )
-            avatar_label.pack(expand=True)
+        # Logo text
+        self.logo_label = ctk.CTkLabel(
+            logo_content,
+            text="UCAN",
+            font=ctk.CTkFont(family="Segoe UI", size=22, weight="bold"),
+            text_color=self.colors["text"],
+            height=32,  # Fixed height
+        )
+        self.logo_label.pack(side="left")
 
-            # Container para textos
-            text_container = ctk.CTkFrame(
-                info_container,
-                fg_color="transparent",
-            )
-            text_container.pack(side="left", fill="both", expand=True)
+        # Container para título e botão de nova conversa
+        chat_header = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="transparent",
+        )
+        chat_header.grid(
+            row=1,
+            column=0,
+            sticky="ew",
+            padx=LAYOUT["padding"]["medium"],
+            pady=(LAYOUT["padding"]["medium"], LAYOUT["padding"]["small"]),
+        )
 
-            # Linha superior: nome e tempo
-            header_container = ctk.CTkFrame(
-                text_container,
-                fg_color="transparent",
-            )
-            header_container.pack(fill="x", expand=True)
+        # Título da seção
+        self.chat_title = ctk.CTkLabel(
+            chat_header,
+            text="Assistente",
+            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        self.chat_title.pack(side="left")
 
-            name_label = ctk.CTkLabel(
-                header_container,
-                text=contact["name"],
-                font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
-                text_color=COLORS["text_primary"],
-                anchor="w",
-            )
-            name_label.pack(side="left")
+        # Botão de nova conversa
+        new_chat_btn = ctk.CTkButton(
+            chat_header,
+            text="＋",  # Ícone plus
+            width=26,
+            height=26,
+            corner_radius=13,
+            font=ctk.CTkFont(size=16),
+            fg_color=self.colors["surface_light"],
+            hover_color=self.colors["primary"],
+            text_color=self.colors["text"],
+            command=self.start_chat,
+        )
+        new_chat_btn.pack(side="right")
 
-            time_label = ctk.CTkLabel(
-                header_container,
-                text=contact["time"],
-                font=ctk.CTkFont(family="Segoe UI", size=12),
-                text_color=COLORS["text_secondary"],
-                anchor="e",
-            )
-            time_label.pack(side="right")
+        # Assistente IA
+        contact = {
+            "name": "Assistente IA",
+            "icon": "🤖",
+            "description": "Chat principal",
+        }
 
-            # Linha inferior: descrição e última mensagem
-            description_label = ctk.CTkLabel(
-                text_container,
-                text=contact["description"],
-                font=ctk.CTkFont(family="Segoe UI", size=12),
-                text_color=COLORS["text_secondary"],
-                anchor="w",
-            )
-            description_label.pack(anchor="w")
+        # Frame do contato
+        contact_frame = ctk.CTkFrame(
+            self.sidebar,
+            corner_radius=LAYOUT["border_radius"]["small"],
+            fg_color="transparent",
+            height=65,
+        )
+        contact_frame.grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            padx=LAYOUT["padding"]["small"],
+            pady=(0, LAYOUT["padding"]["small"]),
+        )
+        contact_frame.grid_propagate(False)
 
-            last_message_label = ctk.CTkLabel(
-                text_container,
-                text=contact["last_message"],
-                font=ctk.CTkFont(family="Segoe UI", size=12),
-                text_color=COLORS["text_secondary"],
-                anchor="w",
-            )
-            last_message_label.pack(anchor="w")
+        # Container para avatar e informações
+        info_container = ctk.CTkFrame(
+            contact_frame,
+            fg_color="transparent",
+        )
+        info_container.pack(fill="both", expand=True, padx=LAYOUT["padding"]["small"])
 
-            # Efeito de hover melhorado
-            def create_hover_effect(frame, is_primary=False):
-                def on_enter(e):
-                    frame.configure(fg_color=COLORS["surface_light"])
-                    if is_primary:
-                        avatar_frame.configure(fg_color=COLORS["primary_hover"])
-                    else:
-                        avatar_frame.configure(fg_color=COLORS["secondary_hover"])
+        # Avatar
+        avatar_size = 36
+        avatar_frame = ctk.CTkFrame(
+            info_container,
+            width=avatar_size,
+            height=avatar_size,
+            corner_radius=LAYOUT["border_radius"]["circle"],
+            fg_color=self.colors["primary"],
+        )
+        avatar_frame.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
+        avatar_frame.pack_propagate(False)
 
-                def on_leave(e):
-                    frame.configure(fg_color="transparent")
-                    if is_primary:
-                        avatar_frame.configure(fg_color=COLORS["primary"])
-                    else:
-                        avatar_frame.configure(fg_color=COLORS["secondary"])
+        avatar_label = ctk.CTkLabel(
+            avatar_frame,
+            text=contact["icon"],
+            font=ctk.CTkFont(family="Segoe UI", size=16),
+            text_color=self.colors["text"],
+        )
+        avatar_label.pack(expand=True)
 
-                for widget in [
-                    frame,
-                    info_container,
-                    avatar_frame,
-                    avatar_label,
-                    text_container,
-                    name_label,
-                    description_label,
-                    last_message_label,
-                ]:
-                    widget.bind("<Enter>", on_enter)
-                    widget.bind("<Leave>", on_leave)
-                    widget.bind(
-                        "<Button-1>",
-                        lambda e, name=contact["name"]: self.start_chat_with(name),
-                    )
+        # Container para textos
+        text_container = ctk.CTkFrame(
+            info_container,
+            fg_color="transparent",
+        )
+        text_container.pack(side="left", fill="both", expand=True)
 
-            create_hover_effect(contact_frame, contact["name"] == "Assistente IA")
+        # Nome do contato
+        name_label = ctk.CTkLabel(
+            text_container,
+            text=contact["name"],
+            font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+            text_color=self.colors["text"],
+            anchor="w",
+        )
+        name_label.pack(anchor="w")
+
+        # Descrição
+        description_label = ctk.CTkLabel(
+            text_container,
+            text=contact["description"],
+            font=ctk.CTkFont(family="Segoe UI", size=11),
+            text_color=self.colors["text_secondary"],
+            anchor="w",
+        )
+        description_label.pack(anchor="w")
+
+        # Efeito hover no contato
+        def create_hover_effect(frame):
+            def on_enter(e):
+                frame.configure(fg_color=self.colors["surface_light"])
+
+            def on_leave(e):
+                frame.configure(fg_color="transparent")
+
+            frame.bind("<Enter>", on_enter)
+            frame.bind("<Leave>", on_leave)
+
+        create_hover_effect(contact_frame)
+
+        # Bind para iniciar chat
+        contact_frame.bind(
+            "<Button-1>",
+            lambda e, name=contact["name"]: self.start_chat_with(name),
+        )
+
+        # Container para título e botão de novo projeto
+        projects_header = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="transparent",
+        )
+        projects_header.grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            padx=LAYOUT["padding"]["medium"],
+            pady=(LAYOUT["padding"]["medium"], LAYOUT["padding"]["small"]),
+        )
+
+        # Título da seção de projetos
+        self.projects_title = ctk.CTkLabel(
+            projects_header,
+            text="Projetos",
+            font=ctk.CTkFont(family="Segoe UI", size=14, weight="bold"),
+            text_color=self.colors["text"],
+        )
+        self.projects_title.pack(side="left")
+
+        # Botão de novo projeto
+        new_project_btn = ctk.CTkButton(
+            projects_header,
+            text="＋",  # Ícone plus
+            width=26,
+            height=26,
+            corner_radius=13,
+            font=ctk.CTkFont(size=16),
+            fg_color=self.colors["surface_light"],
+            hover_color=self.colors["primary"],
+            text_color=self.colors["text"],
+            command=self.show_project_dialog,
+        )
+        new_project_btn.pack(side="right")
+
+        # Project list
+        self.projects_frame = ctk.CTkScrollableFrame(
+            self.sidebar,
+            corner_radius=0,
+            fg_color="transparent",
+            border_width=0,
+        )
+        self.projects_frame.grid(
+            row=4,
+            column=0,
+            sticky="nsew",
+            padx=0,
+            pady=0,
+        )
+        self.projects_frame.grid_columnconfigure(0, weight=1)
 
     def start_chat(self):
         """Inicia o chat com o assistente"""
@@ -600,57 +777,238 @@ class ChatApp(ctk.CTk):
 
     def send_message(self):
         """Envia uma mensagem"""
-        try:
-            # Obtém a mensagem
-            message = self.message_entry.get("1.0", "end-1c").strip()
-            if not message:
-                return
+        message = self.message_entry.get("1.0", "end-1c").strip()
+        if not message or message == "Digite sua mensagem...":
+            return
 
-            # Adiciona ao histórico
-            if not hasattr(self, "message_history"):
-                self.message_history = []
-            self.message_history.append(message)
-            self.history_index = -1
+        # Clear input and reset placeholder
+        self.message_entry.delete("1.0", "end")
+        self._add_placeholder()
 
-            # Limpa o campo
-            self.message_entry.delete("1.0", "end")
+        # Add user message
+        self.add_message(message, "Você")
 
-            # Adiciona a mensagem ao chat
-            self.add_message(message, "Você")
+        # If in a project, save to project
+        if self.current_project:
+            self.project_manager.add_conversation(
+                self.current_project["id"],
+                {"sender": "Você", "content": message},
+            )
 
-            # Obtém resposta do bot
-            response = self.ai_provider.generate_response(message)
+        # Show thinking indicator
+        self.contact_status.pack_forget()
+        self.thinking_indicator.pack(anchor="w")
+        self.thinking_indicator.start()
 
-            # Adiciona resposta do bot após um delay
-            self.after(1000, lambda: self.add_message(response, "Assistente IA"))
+        # Create thread for API call
+        def api_call():
+            try:
+                # Get AI response
+                response = self.ai_provider.get_response(message)
 
-            # Salva a mensagem no banco de dados
-            self.db.save_message("Você", self.current_contact, message)
-            self.db.save_message("Assistente IA", self.current_contact, response)
+                # Schedule UI updates in main thread
+                self.after(0, lambda: self.add_message(response, self.current_contact))
+                self.after(0, lambda: self.thinking_indicator.stop())
+                self.after(0, lambda: self.thinking_indicator.pack_forget())
+                self.after(0, lambda: self.contact_status.pack(anchor="w"))
 
-        except Exception as e:
-            logger.error(f"Erro ao enviar mensagem: {str(e)}")
-            messagebox.showerror("Erro", "Não foi possível enviar a mensagem.")
+                # If in a project, save AI response
+                if self.current_project:
+                    self.after(
+                        0,
+                        lambda: self.project_manager.add_conversation(
+                            self.current_project["id"],
+                            {"sender": "Assistente IA", "content": response},
+                        ),
+                    )
 
-    def add_message(self, message, sender):
+            except Exception as e:
+                logger.error(f"Error in API call: {str(e)}")
+                self.after(
+                    0,
+                    lambda: messagebox.showerror(
+                        "Error", "Failed to get response from AI"
+                    ),
+                )
+                self.after(0, lambda: self.thinking_indicator.stop())
+                self.after(0, lambda: self.thinking_indicator.pack_forget())
+                self.after(0, lambda: self.contact_status.pack(anchor="w"))
+
+        # Start thread
+        threading.Thread(target=api_call, daemon=True).start()
+
+    def add_message(self, message: str, sender: str = "Você"):
         """Adiciona uma mensagem ao chat"""
         try:
-            # Adiciona a mensagem com animação
-            self.messages_frame.add_message(message, sender)
+            message_frame = self.messages_frame.add_message(message, sender)
 
-            # Atualiza o status do assistente
-            if sender == "Assistente IA":
-                self.contact_status.configure(text="Digitando...")
-                self.after(
-                    1000,
-                    lambda: self.contact_status.configure(text="Pronto para conversar"),
-                )
+            # Botões de ação
+            copy_btn = ctk.CTkButton(
+                message_frame.winfo_children()[1],  # actions_frame
+                text="📋",
+                width=24,
+                height=24,
+                fg_color="transparent",
+                hover_color=self.colors["surface"],
+                command=lambda: self.copy_message(message),
+            )
+            copy_btn.grid(row=0, column=0, padx=2)
+
+            edit_btn = ctk.CTkButton(
+                message_frame.winfo_children()[1],  # actions_frame
+                text="✏️",
+                width=24,
+                height=24,
+                fg_color="transparent",
+                hover_color=self.colors["surface"],
+                command=lambda: self.edit_message(message_frame),
+            )
+            edit_btn.grid(row=0, column=1, padx=2)
+
+            delete_btn = ctk.CTkButton(
+                message_frame.winfo_children()[1],  # actions_frame
+                text="🗑️",
+                width=24,
+                height=24,
+                fg_color="transparent",
+                hover_color=self.colors["surface"],
+                command=lambda: self.delete_message(message_frame),
+            )
+            delete_btn.grid(row=0, column=2, padx=2)
+
+            # Esconde os botões inicialmente
+            for btn in [copy_btn, edit_btn, delete_btn]:
+                btn.grid_remove()
+
+            # Mostra/esconde botões no hover
+            def show_actions(event=None):
+                for btn in [copy_btn, edit_btn, delete_btn]:
+                    btn.grid()
+
+            def hide_actions(event=None):
+                if not any(
+                    btn.winfo_containing(event.x_root, event.y_root)
+                    in [copy_btn, edit_btn, delete_btn]
+                    for btn in [copy_btn, edit_btn, delete_btn]
+                ):
+                    for btn in [copy_btn, edit_btn, delete_btn]:
+                        btn.grid_remove()
+
+            message_frame.bind("<Enter>", show_actions)
+            message_frame.bind("<Leave>", hide_actions)
+            for btn in [copy_btn, edit_btn, delete_btn]:
+                btn.bind("<Enter>", show_actions)
+                btn.bind("<Leave>", hide_actions)
 
             # Rola para a última mensagem
-            self.after(100, self._scroll_to_bottom)
+            self.messages_frame._scroll_to_bottom()
 
         except Exception as e:
             logger.error(f"Erro ao adicionar mensagem: {str(e)}")
+
+    def copy_message(self, message):
+        """Copia uma mensagem e mostra feedback visual"""
+        try:
+            # Copia para o clipboard
+            self.clipboard_clear()
+            self.clipboard_append(message)
+
+            # Salva a cor original
+            original_color = message_frame.cget("fg_color")
+
+            # Feedback visual
+            message_frame.configure(fg_color=self.colors["primary"])
+
+            # Restaura após 200ms
+            self.after(200, lambda: message_frame.configure(fg_color=original_color))
+
+        except Exception as e:
+            logger.error(f"Erro ao copiar mensagem: {str(e)}")
+            messagebox.showerror(
+                "Erro", "Não foi possível copiar a mensagem. Tente novamente."
+            )
+
+    def edit_message(self, message_frame):
+        """Edita uma mensagem"""
+        try:
+            # Cria um campo de texto para edição
+            edit_text = ctk.CTkTextbox(
+                message_frame,
+                height=60,
+                fg_color=self.colors["surface_light"],
+                border_width=0,
+                text_color=self.colors["text"],
+            )
+            edit_text.insert("1.0", message_frame.cget("text"))
+            edit_text.pack(fill="both", expand=True, padx=5, pady=5)
+            edit_text.focus()
+
+            def save_edit():
+                new_text = edit_text.get("1.0", "end-1c").strip()
+                if new_text and new_text != message_frame.cget("text"):
+                    # Atualiza a mensagem no banco de dados
+                    if self.current_project:
+                        self.project_manager.update_conversation(
+                            self.current_project["id"],
+                            {"sender": "Você", "content": new_text},
+                        )
+
+                    # Atualiza a UI
+                    message_frame.configure(text=f"Você\n{new_text}")
+
+                # Remove o campo de edição
+                edit_text.destroy()
+                save_button.destroy()
+                cancel_button.destroy()
+
+            def cancel_edit():
+                edit_text.destroy()
+                save_button.destroy()
+                cancel_button.destroy()
+
+            # Botões de salvar e cancelar
+            button_frame = ctk.CTkFrame(
+                message_frame,
+                fg_color="transparent",
+            )
+            button_frame.pack(fill="x", padx=5, pady=(0, 5))
+
+            save_button = ctk.CTkButton(
+                button_frame,
+                text="Salvar",
+                width=60,
+                height=24,
+                command=save_edit,
+            )
+            save_button.pack(side="right", padx=2)
+
+            cancel_button = ctk.CTkButton(
+                button_frame,
+                text="Cancelar",
+                width=60,
+                height=24,
+                fg_color=self.colors["surface"],
+                hover_color=self.colors["surface_light"],
+                command=cancel_edit,
+            )
+            cancel_button.pack(side="right", padx=2)
+
+        except Exception as e:
+            logger.error(f"Erro ao editar mensagem: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível editar a mensagem.")
+
+    def delete_message(self, message_frame):
+        """Deleta uma mensagem"""
+        try:
+            if messagebox.askyesno(
+                "Confirmar exclusão",
+                "Tem certeza que deseja excluir esta mensagem?",
+            ):
+                message_frame.destroy()
+                # TODO: Atualizar no banco de dados
+        except Exception as e:
+            logger.error(f"Erro ao deletar mensagem: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível deletar a mensagem.")
 
     def show_file_dialog(self):
         """Mostra o diálogo de seleção de arquivo"""
@@ -722,281 +1080,137 @@ class ChatApp(ctk.CTk):
     def _add_placeholder(self, event=None):
         """Adiciona placeholder quando o campo está vazio"""
         if not self.message_entry.get("1.0", "end-1c").strip():
-            self.message_entry.insert("1.0", "Digite sua mensagem...")
-            self.message_entry.configure(text_color=COLORS["text_secondary"])
+            self.message_entry.delete("1.0", "end")
+            self.message_entry.insert("1.0", "Envie uma mensagem...")
+            self.message_entry.configure(text_color=self.colors["text_secondary"])
 
     def _clear_placeholder(self, event=None):
         """Remove placeholder quando o campo recebe foco"""
-        if self.message_entry.get("1.0", "end-1c") == "Digite sua mensagem...":
+        if self.message_entry.get("1.0", "end-1c").strip() == "Envie uma mensagem...":
             self.message_entry.delete("1.0", "end")
-            self.message_entry.configure(text_color=COLORS["text_primary"])
-
-    def _highlight_send_button(self, event):
-        """Destaca o botão de enviar no hover"""
-        self.send_button.configure(
-            text="➤",
-            font=ctk.CTkFont(size=18, weight="bold"),
-            fg_color=COLORS["primary"],
-            text_color=COLORS["text_light"],
-            border_color=COLORS["primary"],
-        )
-
-    def _restore_send_button(self, event):
-        """Restaura o botão de enviar após o hover"""
-        self.send_button.configure(
-            text="➤",
-            font=ctk.CTkFont(size=16, weight="bold"),
-            fg_color="transparent",
-            text_color=COLORS["primary"],
-            border_color=COLORS["primary"],
-        )
-
-    def _check_scroll_position(self, event=None):
-        """Verifica a posição da rolagem e mostra/oculta o botão"""
-        try:
-            canvas = self.messages_frame._parent_canvas
-            if not canvas.winfo_exists():
-                return
-
-            # Calcula se está próximo do fim
-            scroll_position = canvas.yview()
-            is_near_bottom = scroll_position[1] > 0.9
-
-            if not is_near_bottom and canvas.yview()[1] < 1.0:
-                self.scroll_button.grid()
-            else:
-                self.scroll_button.grid_remove()
-        except Exception as e:
-            logger.error(f"Erro ao verificar posição de rolagem: {str(e)}")
-
-    def _scroll_to_bottom(self):
-        """Rola para a última mensagem"""
-        try:
-            self.messages_frame._scroll_to_bottom()
-        except Exception as e:
-            logger.error(f"Erro ao rolar para o final: {str(e)}")
-
-    def _copy_message(self, text, bubble):
-        """Copia uma mensagem e mostra feedback visual"""
-        try:
-            # Copia para o clipboard
-            self.clipboard_clear()
-            self.clipboard_append(text)
-
-            # Salva a cor original
-            original_color = bubble.cget("fg_color")
-
-            # Feedback visual
-            bubble.configure(fg_color=COLORS["primary"])
-
-            # Restaura após 200ms
-            self.after(200, lambda: bubble.configure(fg_color=original_color))
-
-        except Exception as e:
-            logger.error(f"Erro ao copiar mensagem: {str(e)}")
-            messagebox.showerror(
-                "Erro", "Não foi possível copiar a mensagem. Tente novamente."
-            )
+            self.message_entry.configure(text_color=self.colors["text"])
 
     def _update_char_count(self, event=None):
         """Atualiza o contador de caracteres"""
         try:
-            if self.message_entry.get("1.0", "end-1c") == "Digite sua mensagem...":
+            if (
+                self.message_entry.get("1.0", "end-1c").strip()
+                == "Envie uma mensagem..."
+            ):
                 count = 0
             else:
                 count = len(self.message_entry.get("1.0", "end-1c"))
 
-            self.char_counter.configure(text=f"{count}/2000")
+            # Atualiza o contador com animação
+            self.char_counter.configure(
+                text=str(count),
+                fg_color=self.colors["surface"]
+                if count <= 2000
+                else self.colors["error"],
+                text_color=self.colors["text_secondary"]
+                if count <= 2000
+                else self.colors["text_light"],
+            )
 
-            # Muda a cor se passar do limite
-            if count > 2000:
-                self.char_counter.configure(text_color=COLORS["error"])
-                self.send_button.configure(state="disabled")
-            else:
-                self.char_counter.configure(text_color=COLORS["text_secondary"])
-                self.send_button.configure(state="normal")
+            # Atualiza o estado do botão
+            self.send_button.configure(
+                state="normal" if count <= 2000 and count > 0 else "disabled",
+                fg_color=self.colors["primary"]
+                if count <= 2000 and count > 0
+                else self.colors["surface"],
+            )
 
         except Exception as e:
             logger.error(f"Erro ao atualizar contador: {str(e)}")
 
     def setup_input_handling(self):
-        """Configura o tratamento de entrada"""
-        # Bind Enter para enviar
-        self.message_entry.bind("<Return>", self.handle_enter)
-        self.message_entry.bind(
-            "<Shift-Return>", lambda e: None
-        )  # Permite quebra de linha com Shift+Enter
+        """Configura os atalhos de teclado"""
+        # Send message
+        self.bind("<Control-Return>", lambda e: self.send_message())
 
-        # Bind Ctrl+Enter para enviar
-        self.message_entry.bind("<Control-Return>", self.send_message)
+        # New chat
+        self.bind("<Control-n>", lambda e: self.start_chat())
 
-        # Bind Ctrl+L para limpar chat
-        self.bind("<Control-l>", lambda e: self.clear_chat())
+        # Clear chat
+        self.bind("<Control-l>", lambda e: self.messages_frame.clear_messages())
 
-        # Bind Ctrl+N para novo chat
-        self.bind("<Control-n>", lambda e: self.new_chat())
+        # Toggle theme
+        self.bind("<Control-t>", lambda e: self.toggle_theme())
 
-        # Bind Ctrl+S para salvar chat
-        self.bind("<Control-s>", lambda e: self.save_chat())
+        # Export chat
+        self.bind("<Control-e>", lambda e: self.export_chat())
 
-        # Bind Ctrl+O para abrir chat
-        self.bind("<Control-o>", lambda e: self.load_chat())
+        # Message history navigation
+        self.bind("<Control-Up>", self._previous_message)
+        self.bind("<Control-Down>", self._next_message)
 
-        # Bind Ctrl+Q para sair
-        self.bind("<Control-q>", lambda e: self.quit())
-
-        # Bind Ctrl+F para focar no campo de mensagem
-        self.bind("<Control-f>", lambda e: self.message_entry.focus())
-
-        # Bind Ctrl+Up/Down para navegar no histórico
-        self.bind("<Control-Up>", lambda e: self.navigate_history(-1))
-        self.bind("<Control-Down>", lambda e: self.navigate_history(1))
-
-        # Bind Ctrl+Backspace para limpar campo
-        self.message_entry.bind("<Control-BackSpace>", lambda e: self.clear_input())
-
-    def clear_input(self):
-        """Limpa o campo de entrada"""
-        self.message_entry.delete("1.0", "end")
-        return "break"
-
-    def navigate_history(self, direction):
-        """Navega no histórico de mensagens"""
+    def _previous_message(self, event=None):
+        """Navega para a mensagem anterior no histórico"""
         if not hasattr(self, "message_history"):
-            self.message_history = []
+            return
+
+        if not hasattr(self, "history_index"):
             self.history_index = -1
 
-        if direction > 0 and self.history_index < len(self.message_history) - 1:
+        if self.history_index < len(self.message_history) - 1:
             self.history_index += 1
             self.message_entry.delete("1.0", "end")
-            self.message_entry.insert("1.0", self.message_history[self.history_index])
-        elif direction < 0 and self.history_index > 0:
+            self.message_entry.insert(
+                "1.0", self.message_history[-(self.history_index + 1)]
+            )
+
+    def _next_message(self, event=None):
+        """Navega para a próxima mensagem no histórico"""
+        if not hasattr(self, "message_history") or not hasattr(self, "history_index"):
+            return
+
+        if self.history_index > 0:
             self.history_index -= 1
             self.message_entry.delete("1.0", "end")
-            self.message_entry.insert("1.0", self.message_history[self.history_index])
-        return "break"
-
-    def clear_chat(self):
-        """Limpa o chat"""
-        self.messages_frame.clear()
-
-    def new_chat(self):
-        """Inicia um novo chat"""
-        self.start_chat()
-
-    def save_chat(self):
-        """Salva o chat"""
-        # Implemente a lógica para salvar o chat
-        pass
-
-    def load_chat(self):
-        """Carrega um chat"""
-        # Implemente a lógica para carregar um chat
-        pass
-
-    def quit(self):
-        """Encerra a aplicação"""
-        self.destroy()
-
-    def _create_gradient(self, frame):
-        """Cria efeito de gradiente no frame"""
-        try:
-            # Cria canvas para o gradiente
-            canvas = tkinter.Canvas(
-                frame,
-                highlightthickness=0,
-                bg=COLORS["primary"],
+            self.message_entry.insert(
+                "1.0", self.message_history[-(self.history_index + 1)]
             )
-            canvas.place(relwidth=1, relheight=1)
+        elif self.history_index == 0:
+            self.history_index = -1
+            self.message_entry.delete("1.0", "end")
+            self._add_placeholder()
 
-            # Cria gradiente
-            width = frame.winfo_width()
-            height = frame.winfo_height()
-
-            # Desenha retângulo com gradiente
-            canvas.create_rectangle(
-                0,
-                0,
-                width,
-                height,
-                fill=COLORS["primary"],
-                outline=COLORS["primary_hover"],
-                stipple="gray50",
+    def export_chat(self):
+        """Exporta o chat atual"""
+        try:
+            filename = filedialog.asksaveasfilename(
+                defaultextension=".txt",
+                filetypes=[
+                    ("Text files", "*.txt"),
+                    ("HTML files", "*.html"),
+                    ("All files", "*.*"),
+                ],
             )
 
-            # Atualiza gradiente quando a janela é redimensionada
-            frame.bind("<Configure>", lambda e: self._update_gradient(canvas, frame))
+            if not filename:
+                return
+
+            with open(filename, "w", encoding="utf-8") as f:
+                if filename.endswith(".html"):
+                    f.write("<html><body><div class='chat'>\\n")
+                    for msg in self.messages_frame.messages:
+                        sender = msg[1].cget("text").split("\\n")[0]
+                        content = "\\n".join(msg[1].cget("text").split("\\n")[1:])
+                        f.write(f"<div class='message {sender.lower()}'>\\n")
+                        f.write(f"<strong>{sender}</strong><br>\\n")
+                        f.write(f"{content}\\n</div>\\n")
+                    f.write("</div></body></html>")
+                else:
+                    for msg in self.messages_frame.messages:
+                        sender = msg[1].cget("text").split("\\n")[0]
+                        content = "\\n".join(msg[1].cget("text").split("\\n")[1:])
+                        f.write(f"{sender}:\\n{content}\\n\\n")
+
+            messagebox.showinfo("Sucesso", "Chat exportado com sucesso!")
 
         except Exception as e:
-            logger.error(f"Erro ao criar gradiente: {str(e)}")
-
-    def _update_gradient(self, canvas, frame):
-        """Atualiza o gradiente quando a janela é redimensionada"""
-        try:
-            width = frame.winfo_width()
-            height = frame.winfo_height()
-            canvas.delete("all")
-            canvas.create_rectangle(
-                0,
-                0,
-                width,
-                height,
-                fill=COLORS["primary"],
-                outline=COLORS["primary_hover"],
-                stipple="gray50",
-            )
-        except Exception as e:
-            logger.error(f"Erro ao atualizar gradiente: {str(e)}")
-
-    def _create_gradient_old(self, frame):
-        """Cria efeito de gradiente no frame"""
-        try:
-            # Cria canvas para o gradiente
-            canvas = tkinter.Canvas(
-                frame,
-                highlightthickness=0,
-                bg=COLORS["primary"],
-            )
-            canvas.place(relwidth=1, relheight=1)
-            canvas.lower()
-
-            # Cria gradiente
-            width = frame.winfo_width()
-            height = frame.winfo_height()
-            for i in range(height):
-                # Calcula cor do gradiente
-                r1, g1, b1 = frame.winfo_rgb(COLORS["primary"])
-                r2, g2, b2 = frame.winfo_rgb(COLORS["primary_hover"])
-                r = r1 + (r2 - r1) * i / height
-                g = g1 + (g2 - g1) * i / height
-                b = b1 + (b2 - b1) * i / height
-                color = f"#{int(r / 256):02x}{int(g / 256):02x}{int(b / 256):02x}"
-
-                # Desenha linha do gradiente
-                canvas.create_line(0, i, width, i, fill=color)
-
-            # Atualiza gradiente quando a janela é redimensionada
-            frame.bind("<Configure>", lambda e: self._update_gradient(canvas, frame))
-
-        except Exception as e:
-            logger.error(f"Erro ao criar gradiente: {str(e)}")
-
-    def _update_gradient_old(self, canvas, frame):
-        """Atualiza o gradiente quando a janela é redimensionada"""
-        try:
-            width = frame.winfo_width()
-            height = frame.winfo_height()
-            canvas.delete("all")
-            for i in range(height):
-                r1, g1, b1 = frame.winfo_rgb(COLORS["primary"])
-                r2, g2, b2 = frame.winfo_rgb(COLORS["primary_hover"])
-                r = r1 + (r2 - r1) * i / height
-                g = g1 + (g2 - g1) * i / height
-                b = b1 + (b2 - b1) * i / height
-                color = f"#{int(r / 256):02x}{int(g / 256):02x}{int(b / 256):02x}"
-                canvas.create_line(0, i, width, i, fill=color)
-        except Exception as e:
-            logger.error(f"Erro ao atualizar gradiente: {str(e)}")
+            logger.error(f"Erro ao exportar chat: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível exportar o chat.")
 
     def start_chat_with(self, contact_name):
         """Inicia chat com um contato específico"""
@@ -1018,9 +1232,9 @@ class ChatApp(ctk.CTk):
 
             # Atualiza cor do avatar
             self.contact_avatar.configure(
-                fg_color=COLORS["primary"]
+                fg_color=self.colors["primary"]
                 if contact_name == "Assistente IA"
-                else COLORS["secondary"]
+                else self.colors["secondary"]
             )
 
             # Limpa o chat
@@ -1058,3 +1272,541 @@ class ChatApp(ctk.CTk):
         except Exception as e:
             logger.error(f"Erro ao iniciar chat: {str(e)}")
             messagebox.showerror("Erro", "Não foi possível iniciar o chat.")
+
+    def toggle_theme(self):
+        """Alterna o tema da aplicação"""
+        ctk.set_appearance_mode(
+            "dark" if ctk.get_appearance_mode() == "light" else "light"
+        )
+        self.theme_manager.apply_theme()
+
+    def _resize_sidebar(self, event):
+        """Redimensiona a sidebar"""
+        new_width = event.x_root - self.sidebar.winfo_rootx()
+        if 180 <= new_width <= 400:  # Min and max width
+            self.sidebar.configure(width=new_width)
+            self.sidebar.grid_propagate(False)
+
+    def show_template_dialog(self):
+        """Shows template management dialog"""
+        dialog = ctk.CTkToplevel(self)
+        dialog.title("Templates")
+        dialog.geometry("400x500")
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # Center dialog
+        dialog.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() // 2) - (dialog.winfo_width() // 2)
+        y = self.winfo_y() + (self.winfo_height() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f"+{x}+{y}")
+
+        # Template list
+        templates_frame = ctk.CTkScrollableFrame(
+            dialog,
+            fg_color="transparent",
+        )
+        templates_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        def load_templates():
+            # Clear existing templates
+            for widget in templates_frame.winfo_children():
+                widget.destroy()
+
+            # Load templates from database
+            templates = self.db.get_templates()
+
+            for template in templates:
+                template_frame = ctk.CTkFrame(
+                    templates_frame,
+                    fg_color=self.colors["surface"],
+                    corner_radius=LAYOUT["border_radius"]["small"],
+                )
+                template_frame.pack(fill="x", pady=5)
+
+                # Template name
+                name_label = ctk.CTkLabel(
+                    template_frame,
+                    text=template["name"],
+                    font=ctk.CTkFont(size=14, weight="bold"),
+                )
+                name_label.pack(anchor="w", padx=10, pady=(5, 0))
+
+                # Template content preview
+                preview = (
+                    template["content"][:100] + "..."
+                    if len(template["content"]) > 100
+                    else template["content"]
+                )
+                content_label = ctk.CTkLabel(
+                    template_frame,
+                    text=preview,
+                    wraplength=300,
+                )
+                content_label.pack(anchor="w", padx=10, pady=(0, 5))
+
+                # Use template button
+                use_button = ctk.CTkButton(
+                    template_frame,
+                    text="Usar",
+                    width=60,
+                    height=24,
+                    command=lambda t=template: self.use_template(t["content"], dialog),
+                )
+                use_button.pack(side="right", padx=10, pady=5)
+
+        # Add template button
+        add_button = ctk.CTkButton(
+            dialog, text="+ Novo Template", command=lambda: show_add_dialog(dialog)
+        )
+        add_button.pack(pady=10)
+
+        def show_add_dialog(parent):
+            add_dialog = ctk.CTkToplevel(parent)
+            add_dialog.title("Novo Template")
+            add_dialog.geometry("400x300")
+            add_dialog.transient(parent)
+            add_dialog.grab_set()
+
+            # Center dialog
+            add_dialog.update_idletasks()
+            x = (
+                parent.winfo_x()
+                + (parent.winfo_width() // 2)
+                - (add_dialog.winfo_width() // 2)
+            )
+            y = (
+                parent.winfo_y()
+                + (parent.winfo_height() // 2)
+                - (add_dialog.winfo_height() // 2)
+            )
+            add_dialog.geometry(f"+{x}+{y}")
+
+            # Name input
+            name_label = ctk.CTkLabel(add_dialog, text="Nome:")
+            name_label.pack(anchor="w", padx=10, pady=(10, 0))
+
+            name_entry = ctk.CTkEntry(add_dialog)
+            name_entry.pack(fill="x", padx=10, pady=(0, 10))
+
+            # Content input
+            content_label = ctk.CTkLabel(add_dialog, text="Conteúdo:")
+            content_label.pack(anchor="w", padx=10, pady=(10, 0))
+
+            content_text = ctk.CTkTextbox(add_dialog, height=150)
+            content_text.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+
+            def save_template():
+                name = name_entry.get().strip()
+                content = content_text.get("1.0", "end-1c").strip()
+
+                if name and content:
+                    self.db.save_template(name, content)
+                    add_dialog.destroy()
+                    load_templates()
+
+            # Save button
+            save_button = ctk.CTkButton(
+                add_dialog, text="Salvar", command=save_template
+            )
+            save_button.pack(pady=10)
+
+        # Load initial templates
+        load_templates()
+
+    def use_template(self, content: str, dialog=None):
+        """Uses a template"""
+        if dialog:
+            dialog.destroy()
+
+        self.message_entry.delete("1.0", "end")
+        self.message_entry.insert("1.0", content)
+        self.message_entry.focus()
+
+    def attach_file(self):
+        """Open file dialog to attach a file"""
+        file_path = filedialog.askopenfilename(
+            title="Selecionar arquivo",
+            filetypes=[
+                ("All Files", "*.*"),
+                ("Images", "*.jpg *.jpeg *.png *.gif"),
+                ("Documents", "*.pdf *.doc *.docx"),
+                ("Text Files", "*.txt *.md"),
+                ("Code Files", "*.py *.js *.html *.css *.json"),
+            ],
+        )
+
+        if file_path:
+            self.process_attachment(file_path)
+
+    def process_attachment(self, file_path):
+        """Process an attached file"""
+        try:
+            # Get file info
+            file_info = self.attachment_manager.get_file_info(file_path)
+
+            if not file_info:
+                messagebox.showerror("Erro", "Não foi possível processar o arquivo")
+                return
+
+            # Process file
+            result = self.attachment_manager.process_file(file_path)
+            if not result:
+                messagebox.showerror("Erro", "Não foi possível processar o arquivo")
+                return
+
+            stored_path, mime_type, preview = result
+
+            # Update UI
+            self.current_attachment = {
+                "path": stored_path,
+                "type": mime_type,
+                "name": os.path.basename(file_path),
+                "preview": preview,
+            }
+
+            # Show preview
+            if preview and mime_type.startswith(("image/", "application/pdf")):
+                img = Image.open(preview)
+                img.thumbnail((100, 100))
+                photo = ImageTk.PhotoImage(img)
+                self.attachment_preview.configure(image=photo)
+                self.attachment_preview.image = photo
+            else:
+                self.attachment_preview.configure(
+                    text=f"📎 {os.path.basename(file_path)}"
+                )
+
+            self.attachment_frame.pack(side=ctk.LEFT, fill=ctk.X, expand=True)
+
+        except Exception as e:
+            logger.error(f"Error processing attachment: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível processar o arquivo")
+
+    def remove_attachment(self):
+        """Remove the current attachment"""
+        self.current_attachment = None
+        self.attachment_preview.configure(image="", text="")
+        self.attachment_frame.pack_forget()
+
+    def _create_gradient(self, frame):
+        """Create a gradient effect on a frame"""
+        colors = self.theme_manager.get_colors()
+        gradient = ctk.CTkCanvas(
+            frame,
+            height=60,
+            bg=colors["primary"],
+            highlightthickness=0,
+        )
+        gradient.pack(fill="both", expand=True)
+
+        # Create gradient effect
+        for i in range(60):
+            alpha = (60 - i) / 60  # Fade from bottom to top
+            color = self._blend_colors(colors["primary"], colors["surface"], alpha)
+            gradient.create_line(0, i, frame.winfo_width(), i, fill=color)
+
+    def _blend_colors(self, color1, color2, alpha):
+        """Blend two colors with alpha"""
+        # Convert colors from hex to RGB
+        r1 = int(color1[1:3], 16)
+        g1 = int(color1[3:5], 16)
+        b1 = int(color1[5:7], 16)
+
+        r2 = int(color2[1:3], 16)
+        g2 = int(color2[3:5], 16)
+        b2 = int(color2[5:7], 16)
+
+        # Blend colors
+        r = int(r1 * alpha + r2 * (1 - alpha))
+        g = int(g1 * alpha + g2 * (1 - alpha))
+        b = int(b1 * alpha + b2 * (1 - alpha))
+
+        # Convert back to hex
+        return f"#{r:02x}{g:02x}{b:02x}"
+
+    def show_project_dialog(self, project: Dict = None):
+        """Show project creation/edit dialog"""
+        dialog = ProjectDialog(self, project=project, on_save=self._handle_project_save)
+        dialog.focus()
+
+    def _handle_project_save(self, project_data: Dict):
+        """Handle project save"""
+        try:
+            if "id" in project_data:
+                # Update existing project
+                self.project_manager.update_project(project_data["id"], project_data)
+            else:
+                # Create new project
+                self.project_manager.create_project(
+                    project_data["name"],
+                    project_data["description"],
+                    project_data["instructions"],
+                )
+
+            # Reload projects
+            self.load_projects()
+
+        except Exception as e:
+            logger.error(f"Error handling project save: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível salvar o projeto.")
+
+    def load_projects(self):
+        """Load and display projects"""
+        try:
+            # Clear existing projects
+            for widget in self.projects_frame.winfo_children():
+                widget.destroy()
+
+            # Get projects
+            projects = self.project_manager.list_projects()
+
+            # Configure scrollbar visibility
+            if not projects:
+                self.projects_frame._scrollbar.grid_remove()
+            else:
+                self.projects_frame._scrollbar.grid()
+
+            # Display projects
+            for project in projects:
+                project_frame = ctk.CTkFrame(
+                    self.projects_frame,
+                    corner_radius=LAYOUT["border_radius"]["small"],
+                    fg_color="transparent",
+                    height=65,
+                )
+                project_frame.pack(
+                    fill="x",
+                    padx=LAYOUT["padding"]["small"],
+                    pady=(0, LAYOUT["padding"]["small"]),
+                )
+                project_frame.pack_propagate(False)
+
+                # Project info container
+                info_container = ctk.CTkFrame(
+                    project_frame,
+                    fg_color="transparent",
+                )
+                info_container.pack(
+                    fill="both", expand=True, padx=LAYOUT["padding"]["small"]
+                )
+
+                # Project icon
+                icon_size = 36
+                icon_frame = ctk.CTkFrame(
+                    info_container,
+                    width=icon_size,
+                    height=icon_size,
+                    corner_radius=LAYOUT["border_radius"]["circle"],
+                    fg_color=self.colors["secondary"],
+                )
+                icon_frame.pack(side="left", padx=(0, LAYOUT["padding"]["small"]))
+                icon_frame.pack_propagate(False)
+
+                icon_label = ctk.CTkLabel(
+                    icon_frame,
+                    text="📁",
+                    font=ctk.CTkFont(family="Segoe UI", size=16),
+                    text_color=self.colors["text"],
+                )
+                icon_label.pack(expand=True)
+
+                # Project details
+                text_container = ctk.CTkFrame(
+                    info_container,
+                    fg_color="transparent",
+                )
+                text_container.pack(side="left", fill="both", expand=True)
+
+                # Project name
+                name_label = ctk.CTkLabel(
+                    text_container,
+                    text=project["name"],
+                    font=ctk.CTkFont(family="Segoe UI", size=13, weight="bold"),
+                    text_color=self.colors["text"],
+                    anchor="w",
+                )
+                name_label.pack(anchor="w")
+
+                # Project description
+                desc_label = ctk.CTkLabel(
+                    text_container,
+                    text=project["description"][:40] + "..."
+                    if len(project["description"]) > 40
+                    else project["description"],
+                    font=ctk.CTkFont(family="Segoe UI", size=11),
+                    text_color=self.colors["text_secondary"],
+                    anchor="w",
+                )
+                desc_label.pack(anchor="w")
+
+                # Last updated
+                last_updated = ctk.CTkLabel(
+                    text_container,
+                    text=f"Atualizado {project['updated_at'][:10]}",
+                    font=ctk.CTkFont(family="Segoe UI", size=10),
+                    text_color=self.colors["text_secondary"],
+                    anchor="w",
+                )
+                last_updated.pack(anchor="w")
+
+                # Project actions container
+                actions_container = ctk.CTkFrame(
+                    info_container,
+                    fg_color="transparent",
+                    width=80,
+                )
+                actions_container.pack(side="right", fill="y")
+                actions_container.pack_propagate(False)
+
+                # Edit button
+                edit_button = ctk.CTkButton(
+                    actions_container,
+                    text="✏️",
+                    width=26,
+                    height=26,
+                    corner_radius=13,
+                    font=ctk.CTkFont(size=14),
+                    fg_color="transparent",
+                    hover_color=self.colors["surface"],
+                    text_color=self.colors["text_secondary"],
+                    command=lambda p=project: self.show_project_dialog(p),
+                )
+                edit_button.pack(side="left", padx=2)
+
+                # Delete button
+                delete_button = ctk.CTkButton(
+                    actions_container,
+                    text="🗑️",
+                    width=26,
+                    height=26,
+                    corner_radius=13,
+                    font=ctk.CTkFont(size=14),
+                    fg_color="transparent",
+                    hover_color=self.colors["error"],
+                    text_color=self.colors["text_secondary"],
+                    command=lambda p=project: self.delete_project(p),
+                )
+                delete_button.pack(side="left", padx=2)
+
+                # Hover effect
+                def create_hover_effect(frame, icon_frame):
+                    def on_enter(e):
+                        frame.configure(fg_color=self.colors["surface_light"])
+                        icon_frame.configure(fg_color=self.colors["primary"])
+
+                    def on_leave(e):
+                        frame.configure(fg_color="transparent")
+                        icon_frame.configure(fg_color=self.colors["secondary"])
+
+                    for widget in [
+                        frame,
+                        info_container,
+                        text_container,
+                        name_label,
+                        desc_label,
+                        last_updated,
+                    ]:
+                        widget.bind("<Enter>", on_enter)
+                        widget.bind("<Leave>", on_leave)
+                        widget.bind(
+                            "<Button-1>",
+                            lambda e, p=project: self.load_project(p),
+                        )
+
+                create_hover_effect(project_frame, icon_frame)
+
+            # Check if scrollbar is needed
+            self.after(100, self._check_projects_scroll)
+
+        except Exception as e:
+            logger.error(f"Error loading projects: {str(e)}")
+
+    def _check_projects_scroll(self):
+        """Check if projects scrollbar is needed"""
+        try:
+            canvas = self.projects_frame._parent_canvas
+            if not canvas.winfo_exists():
+                return
+
+            # Get canvas and scrollregion sizes
+            canvas_height = canvas.winfo_height()
+            _, _, _, scroll_height = (
+                canvas.bbox("all") if canvas.bbox("all") else (0, 0, 0, 0)
+            )
+
+            # Show/hide scrollbar based on content
+            if scroll_height <= canvas_height:
+                self.projects_frame._scrollbar.grid_remove()
+            else:
+                self.projects_frame._scrollbar.grid()
+
+        except Exception as e:
+            logger.error(f"Error checking projects scroll: {str(e)}")
+
+    def load_project(self, project: Dict):
+        """Load a project"""
+        try:
+            # Update current project
+            self.current_project = project
+
+            # Update UI
+            self.contact_name.configure(text=project["name"])
+            self.contact_status.configure(text="Projeto carregado")
+
+            # Clear messages
+            self.messages_frame.clear_messages()
+
+            # Load project conversations
+            for conversation in project["conversations"]:
+                self.add_message(conversation["content"], conversation["sender"])
+
+            # Update project button text
+            self.project_button.configure(text="Editar Projeto")
+
+        except Exception as e:
+            logger.error(f"Error loading project: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível carregar o projeto.")
+
+    def _scroll_to_bottom(self):
+        """Rola para a última mensagem"""
+        try:
+            self.messages_frame._scroll_to_bottom()
+        except Exception as e:
+            logger.error(f"Erro ao rolar para o final: {str(e)}")
+
+    def _check_scroll_position(self, event=None):
+        """Verifica a posição da rolagem e mostra/oculta o botão"""
+        try:
+            canvas = self.messages_frame._parent_canvas
+            if not canvas.winfo_exists():
+                return
+
+            # Calcula se está próximo do fim
+            scroll_position = canvas.yview()
+            is_near_bottom = scroll_position[1] > 0.9
+
+            if not is_near_bottom and canvas.yview()[1] < 1.0:
+                self.scroll_button.grid()
+            else:
+                self.scroll_button.grid_remove()
+        except Exception as e:
+            logger.error(f"Erro ao verificar posição de rolagem: {str(e)}")
+
+    def delete_project(self, project: Dict):
+        """Delete a project"""
+        try:
+            if messagebox.askyesno(
+                "Confirmar exclusão",
+                f"Tem certeza que deseja excluir o projeto '{project['name']}'?",
+            ):
+                self.project_manager.delete_project(project["id"])
+                self.load_projects()
+
+                if self.current_project and self.current_project["id"] == project["id"]:
+                    self.current_project = None
+                    self.start_chat()
+
+        except Exception as e:
+            logger.error(f"Error deleting project: {str(e)}")
+            messagebox.showerror("Erro", "Não foi possível excluir o projeto.")

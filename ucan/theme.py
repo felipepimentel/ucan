@@ -2,25 +2,42 @@ import json
 import logging
 import os
 
+import customtkinter as ctk
+
 logger = logging.getLogger("UCAN")
 
 # Definir algumas cores e estilos consistentes para a aplicação
 COLORS = {
-    "primary": "#2563eb",
-    "primary_hover": "#1d4ed8",
-    "secondary": "#4f46e5",
-    "secondary_hover": "#4338ca",
-    "background": "#0f172a",
-    "surface": "#1e293b",
-    "surface_light": "#334155",
-    "text_primary": "#f8fafc",
-    "text_secondary": "#94a3b8",
-    "text_light": "#ffffff",
-    "border": "#334155",
-    "error": "#ef4444",
-    "success": "#22c55e",
-    "warning": "#f59e0b",
-    "info": "#3b82f6",
+    "light": {
+        "primary": "#2563eb",  # bright blue
+        "secondary": "#059669",  # emerald green
+        "background": "#f8fafc",  # very light gray
+        "surface": "#ffffff",  # white
+        "surface_light": "#f1f5f9",  # light gray
+        "text": "#1e293b",  # dark slate
+        "text_primary": "#1e293b",  # dark slate
+        "text_secondary": "#64748b",  # slate
+        "text_light": "#f8fafc",  # very light gray
+        "error": "#ef4444",  # red
+        "border": "#e2e8f0",  # gray
+        "primary_hover": "#1d4ed8",  # darker blue
+        "secondary_hover": "#047857",  # darker emerald
+    },
+    "dark": {
+        "primary": "#3b82f6",  # blue
+        "secondary": "#10b981",  # emerald
+        "background": "#0f172a",  # very dark blue
+        "surface": "#1e293b",  # dark blue gray
+        "surface_light": "#334155",  # slate
+        "text": "#f8fafc",  # very light gray
+        "text_primary": "#f8fafc",  # very light gray
+        "text_secondary": "#94a3b8",  # light slate
+        "text_light": "#f8fafc",  # very light gray
+        "error": "#f87171",  # light red
+        "border": "#334155",  # slate
+        "primary_hover": "#2563eb",  # brighter blue
+        "secondary_hover": "#059669",  # brighter emerald
+    },
 }
 
 # Constantes de estilo
@@ -35,34 +52,34 @@ TEXT_STYLES = {
 
 LAYOUT = {
     "padding": {
-        "small": 4,
-        "medium": 8,
-        "large": 16,
+        "small": 5,
+        "medium": 10,
+        "large": 20,
     },
     "border_radius": {
-        "small": 4,
-        "medium": 8,
-        "large": 12,
-        "circle": 18,
+        "small": 6,
+        "medium": 10,
+        "large": 15,
+        "circle": 20,
     },
     "button": {
         "width": 36,
         "height": 36,
         "corner_radius": 8,
         "border_width": 1,
-        "hover_color": COLORS["surface_light"],
+        "hover_color": "#f1f5f9",  # light gray
     },
     "input": {
         "height": 36,
         "corner_radius": 8,
         "border_width": 1,
-        "hover_color": COLORS["surface_light"],
+        "hover_color": "#f1f5f9",  # light gray
     },
     "message": {
         "max_width": 600,
         "corner_radius": 8,
         "border_width": 1,
-        "hover_color": COLORS["surface_light"],
+        "hover_color": "#f1f5f9",  # light gray
     },
 }
 
@@ -70,32 +87,32 @@ BUTTON_STYLES = {
     "default": {
         "font": ("Segoe UI", 16),
         "corner_radius": LAYOUT["border_radius"]["small"],
-        "fg_color": COLORS["primary"],
-        "text_color": COLORS["text_light"],
-        "hover_color": COLORS["primary_hover"],
+        "fg_color": "#2563eb",  # bright blue
+        "text_color": "#f8fafc",  # very light gray
+        "hover_color": "#1d4ed8",  # darker blue
     },
     "outline": {
         "font": ("Segoe UI", 16),
         "corner_radius": LAYOUT["border_radius"]["small"],
-        "fg_color": COLORS["surface_light"],
-        "text_color": COLORS["text_light"],
-        "hover_color": COLORS["surface_light"],
+        "fg_color": "#f1f5f9",  # light gray
+        "text_color": "#f8fafc",  # very light gray
+        "hover_color": "#f1f5f9",  # light gray
         "border_width": 1,
-        "border_color": COLORS["border"],
+        "border_color": "#e2e8f0",  # gray
     },
     "accent": {
         "font": ("Segoe UI", 16),
         "corner_radius": LAYOUT["border_radius"]["small"],
-        "fg_color": COLORS["primary"],
-        "text_color": COLORS["text_light"],
-        "hover_color": COLORS["primary_hover"],
+        "fg_color": "#2563eb",  # bright blue
+        "text_color": "#f8fafc",  # very light gray
+        "hover_color": "#1d4ed8",  # darker blue
     },
     "icon": {
         "font": ("Segoe UI", 20),
         "corner_radius": LAYOUT["border_radius"]["circle"],
-        "fg_color": COLORS["surface"],
-        "text_color": COLORS["text_primary"],
-        "hover_color": COLORS["surface_light"],
+        "fg_color": "#ffffff",  # white
+        "text_color": "#1e293b",  # dark slate
+        "hover_color": "#f1f5f9",  # light gray
         "width": 46,
         "height": 46,
     },
@@ -104,46 +121,24 @@ BUTTON_STYLES = {
 
 class ThemeManager:
     def __init__(self):
-        self.themes = {
-            "dark": {
-                "primary": "#1E88E5",
-                "primary_hover": "#1976D2",
-                "secondary": "#78909C",
-                "success": "#43A047",
-                "danger": "#E53935",
-                "warning": "#FFB300",
-                "background": "#2D2D2D",
-                "surface": "#3D3D3D",
-                "text": "#EEEEEE",
-                "text_secondary": "#BDBDBD",
-            },
-            "light": {
-                "primary": "#2196F3",
-                "primary_hover": "#1976D2",
-                "secondary": "#78909C",
-                "success": "#4CAF50",
-                "danger": "#F44336",
-                "warning": "#FFC107",
-                "background": "#F5F5F5",
-                "surface": "#FFFFFF",
-                "text": "#212121",
-                "text_secondary": "#757575",
-            },
-            "blue": {
-                "primary": "#1976D2",
-                "primary_hover": "#1565C0",
-                "secondary": "#78909C",
-                "success": "#43A047",
-                "danger": "#E53935",
-                "warning": "#FFB300",
-                "background": "#1A237E",
-                "surface": "#283593",
-                "text": "#FFFFFF",
-                "text_secondary": "#B3E5FC",
-            },
-        }
         self.current_theme = "dark"
-        self.load_theme()
+        self.colors = COLORS[self.current_theme]
+
+    def toggle_theme(self):
+        """Toggle between light and dark themes"""
+        self.current_theme = "light" if self.current_theme == "dark" else "dark"
+        self.colors = COLORS[self.current_theme]
+        ctk.set_appearance_mode(self.current_theme)
+        return self.current_theme
+
+    def get_colors(self):
+        """Get current theme colors"""
+        return self.colors
+
+    def apply_theme(self):
+        """Apply current theme to the application"""
+        ctk.set_appearance_mode(self.current_theme)
+        return self.colors
 
     def load_theme(self):
         """Carrega o tema salvo"""
@@ -165,12 +160,13 @@ class ThemeManager:
 
     def get_theme(self):
         """Retorna o tema atual"""
-        return self.themes[self.current_theme]
+        return self.colors
 
     def set_theme(self, theme_name):
         """Define o tema atual"""
-        if theme_name in self.themes:
+        if theme_name in COLORS:
             self.current_theme = theme_name
+            self.colors = COLORS[theme_name]
             self.save_theme()
             return True
         return False
