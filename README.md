@@ -1,61 +1,76 @@
-# UCAN Chat
+# UCAN Chat Application
 
-Um aplicativo de chat moderno e elegante desenvolvido com Python e CustomTkinter.
+A modern chat application built with FastAPI and SQLite.
 
-## Características
+## Features
 
-- Interface moderna e responsiva
-- Suporte a emojis
-- Configurações de perfil
-- Histórico de mensagens
-- Temas claro e escuro
-- Notificações
-- Som
+- Project management with conversations
+- Real-time messaging
+- Search functionality across projects and conversations
+- Clean and modern API design
+- SQLite database for easy setup
 
-## Requisitos
+## Setup
 
-- Python 3.9 ou superior
-- Poetry para gerenciamento de dependências
-
-## Instalação
-
-1. Clone o repositório:
+1. Clone the repository:
 ```bash
-git clone https://github.com/pimenta/ucan.git
+git clone https://github.com/yourusername/ucan.git
 cd ucan
 ```
 
-2. Instale as dependências com Poetry:
+2. Create a virtual environment and activate it:
 ```bash
-poetry install
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-## Execução
-
-Para executar o aplicativo:
-
+3. Install dependencies:
 ```bash
-poetry run ucan
+pip install -r requirements.txt
 ```
 
-## Estrutura do Projeto
-
-```
-ucan/
-├── __init__.py
-├── main.py
-├── chat.py
-├── ui.py
-├── constants.py
-└── helpers.py
+4. Run the application:
+```bash
+uvicorn ucan.main:app --reload
 ```
 
-- `main.py`: Ponto de entrada e lógica principal
-- `chat.py`: Lógica do chat e mensagens
-- `ui.py`: Componentes da interface
-- `constants.py`: Constantes e configurações
-- `helpers.py`: Funções utilitárias
+The API will be available at `http://localhost:8000`.
 
-## Licença
+## API Documentation
 
-Este projeto está licenciado sob a licença MIT - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Once the server is running, you can access the interactive API documentation at:
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+## API Endpoints
+
+### Conversations
+- `POST /api/conversations` - Create a new conversation
+- `GET /api/conversations` - List all conversations
+- `GET /api/conversations/{id}` - Get a specific conversation
+- `PUT /api/conversations/{id}` - Update a conversation
+- `DELETE /api/conversations/{id}` - Delete a conversation
+- `POST /api/conversations/{id}/messages` - Add a message to a conversation
+- `GET /api/conversations/{id}/messages` - Get all messages in a conversation
+
+### Projects
+- `POST /api/projects` - Create a new project
+- `GET /api/projects` - List all projects
+- `GET /api/projects/{id}` - Get a specific project
+- `PUT /api/projects/{id}` - Update a project
+- `DELETE /api/projects/{id}` - Delete a project
+
+### Search
+- `GET /api/search?q={query}` - Search across projects and conversations
+
+## Development
+
+The project uses:
+- FastAPI for the API framework
+- SQLite for the database
+- Pydantic for data validation
+- CORS middleware for frontend integration
+
+## License
+
+MIT License

@@ -1,19 +1,15 @@
 import logging
 import sys
 
+from .main import setup_logging
 from .ui import ChatApp
-
-logger = logging.getLogger("UCAN")
 
 
 def main():
     """Main entry point"""
     try:
-        # Configure logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        )
+        # Use the central logging configuration
+        logger = setup_logging()
 
         # Create and configure main app
         app = ChatApp()
@@ -37,6 +33,7 @@ def main():
         app.mainloop()
 
     except Exception as e:
+        logger = logging.getLogger("UCAN")
         logger.error(f"Erro ao iniciar aplicação: {str(e)}")
         sys.exit(1)
 
